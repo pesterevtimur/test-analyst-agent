@@ -55,6 +55,7 @@ class ProposalView(BaseModel):
     plan: list[str]
     policy: str
     policy_reason: str
+    data_as_of: str | None = None
 
 
 class ResultView(BaseModel):
@@ -225,6 +226,7 @@ class Tools:
             ).model_dump()
 
         proposal_id = new_id("prop")
+        data_as_of = self.db.replica_as_of()
         try:
             plan = self.db.explain(verdict.sql, statement_id=proposal_id[:30])
         except QueryRefused as exc:
@@ -246,7 +248,7 @@ class Tools:
                 row_limit=verdict.row_limit, limit_imposed=int(verdict.limit_added),
                 estimated_rows=plan.estimated_rows,
                 estimated_cost=plan.estimated_cost, plan=plan.lines,
-                policy_reason=reason,
+                policy_reason=reason, data_as_of=data_as_of,
             )
         )
         self.store.record(
@@ -260,7 +262,7 @@ class Tools:
             tables=verdict.tables, row_limit=verdict.row_limit,
             limit_added=verdict.limit_added, estimated_rows=plan.estimated_rows,
             estimated_cost=plan.estimated_cost, plan=plan.lines,
-            policy=policy, policy_reason=reason,
+            policy=policy, policy_reason=reason, data_as_of=data_as_of,
         ).model_dump()
 
     def _policy(self, verdict: Verdict, estimated_rows: int | None) -> tuple[str, str]:
@@ -345,6 +347,26 @@ class Tools:
                 detail=(
                     f"{exc}. Предложение одноразовое: если оно уже выполнено, "
                     "соберите новое через propose_query."
+                ),
+            ).model_dump()
+
+        # A proposal is planned against one state of the replica. If the replica
+        # has been refreshed since, the same SQL answers a different question and
+        # the approval no longer covers it.
+        current_as_of = self.db.replica_as_of()
+        if proposal.data_as_of and current_as_of and current_as_of != proposal.data_as_of:
+            self.store.record(
+                user_id=user_id, tool="execute_query", outcome="stale_proposal",
+                trace_id=trace_id, proposal_id=proposal.id,
+                planned_for=proposal.data_as_of, now=current_as_of,
+            )
+            return ToolError(
+                error="Данные обновились после подтверждения.",
+                detail=(
+                    f"Предложение готовилось на данные от {proposal.data_as_of}, "
+                    f"а реплика сейчас на {current_as_of}. Тот же запрос ответит на "
+                    "другой вопрос, и подтверждение аналитика его больше не покрывает. "
+                    "Соберите предложение заново через propose_query."
                 ),
             ).model_dump()
 

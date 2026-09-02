@@ -61,6 +61,12 @@ class Database:
             increment=1,
             getmode=oracledb.POOL_GETMODE_TIMEDWAIT,
             wait_timeout=5000,
+            # Ping on every acquire. Refreshing the reporting replica drops and
+            # recreates the pluggable database, which leaves every pooled session
+            # pointing at something that no longer exists; without the ping the
+            # server answers ORA-01017 until it is restarted. The cost is one
+            # round trip per query, invisible next to the query itself.
+            ping_interval=0,
         )
 
     def close(self) -> None:

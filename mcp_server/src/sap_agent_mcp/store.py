@@ -18,6 +18,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+import logging
+
 from sqlalchemy import (
     JSON,
     DateTime,
@@ -29,9 +31,14 @@ from sqlalchemy import (
     create_engine,
     event,
     func,
+    inspect,
     select,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+
+
+logger = logging.getLogger(__name__)
 
 
 def now() -> datetime:
@@ -78,6 +85,10 @@ class Proposal(Base):
     estimated_cost: Mapped[float | None] = mapped_column(Float)
     plan: Mapped[list[str]] = mapped_column(JSON, default=list)
     policy_reason: Mapped[str] = mapped_column(Text, default="")
+    # The moment the replica described when this proposal was planned. A
+    # proposal approved against one refresh and executed after the next answers
+    # a different question with the same SQL, and nothing in the numbers says so.
+    data_as_of: Mapped[str | None] = mapped_column(String(64))
     # The decision, kept rather than overwritten: on a review someone will ask
     # why this was approved, and the answer must be in the system.
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -151,6 +162,43 @@ class Store:
             cursor.close()
 
         Base.metadata.create_all(self.engine)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Add columns the model has and the stored schema does not.
+
+        create_all() creates missing tables and never touches existing ones, so
+        adding a field to a model leaves an old database silently one column
+        behind. That surfaced here as a tool failing at runtime rather than the
+        server refusing to start, which is the wrong way round.
+
+        Only additive changes are applied, and every one is logged. Anything else
+        (a column removed, a type changed) stops the server: a state store that
+        quietly reshapes itself is worse than one that refuses to open.
+
+        A project that outgrows this uses Alembic. The condition is recorded in
+        docs/not-done.md.
+        """
+        inspector = inspect(self.engine)
+        for table in Base.metadata.sorted_tables:
+            stored = {c["name"] for c in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in stored:
+                    continue
+                if not (column.nullable or column.default is not None):
+                    raise RuntimeError(
+                        f"{table.name}.{column.name} is missing from the stored schema "
+                        "and is not nullable, so it cannot be added to existing rows. "
+                        "Migrate the state database deliberately."
+                    )
+                ddl = f"ALTER TABLE {table.name} ADD COLUMN {column.name} "
+                ddl += column.type.compile(self.engine.dialect)
+                with self.engine.begin() as connection:
+                    connection.execute(text(ddl))
+                logger.warning(
+                    "state schema: added %s.%s to an existing database",
+                    table.name, column.name,
+                )
 
     def session(self) -> Session:
         return Session(self.engine, future=True)

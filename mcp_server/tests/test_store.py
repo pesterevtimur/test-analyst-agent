@@ -195,3 +195,38 @@ def test_concurrency_counts_started_minus_finished(store):
     store.record(user_id="u1", tool="execute_query", outcome="finished")
     assert store.running() == 1
     assert store.running(user_id="u1") == 0
+
+
+def test_a_proposal_remembers_the_data_moment_it_was_planned_against(store):
+    proposal = store.add_proposal(
+        Proposal(
+            id=new_id("prop"), user_id="analyst-1", question="в", sql="SELECT 1 FROM sh.zvbrp",
+            status=ProposalStatus.AUTO, checks=[], tables=[], columns=[], row_limit=10,
+            data_as_of="2026-09-02T15:29:07+00:00",
+        )
+    )
+    assert store.get_proposal(proposal.id).data_as_of == "2026-09-02T15:29:07+00:00"
+
+
+def test_a_new_column_is_added_to_an_existing_state_database(tmp_path, caplog):
+    """Adding a field to a model must not leave an old database a column behind.
+
+    create_all() only creates missing tables, so without this the first tool call
+    against an older state file fails at runtime instead of the server refusing
+    to start.
+    """
+    import sqlalchemy as sa
+
+    path = tmp_path / "state.db"
+    Store(path)
+
+    engine = sa.create_engine(f"sqlite:///{path}")
+    with engine.begin() as connection:
+        connection.execute(sa.text("ALTER TABLE proposals DROP COLUMN data_as_of"))
+    with engine.connect() as connection:
+        columns = {c["name"] for c in sa.inspect(engine).get_columns("proposals")}
+    assert "data_as_of" not in columns
+
+    Store(path)  # reopening must repair the schema
+    columns = {c["name"] for c in sa.inspect(engine).get_columns("proposals")}
+    assert "data_as_of" in columns
