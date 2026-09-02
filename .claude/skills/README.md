@@ -4,7 +4,7 @@
 
 ## Что сюда кладётся
 
-Каждый skill — это директория с `SKILL.md` (обязательно) и опциональными `references/`, `scripts/`, `assets/`, `evals/`. Структура — по [Anthropic Agent Skills spec](https://agentskills.io/specification).
+Каждый skill это директория с `SKILL.md` (обязательно) и опциональными `references/`, `scripts/`, `assets/`, `evals/`. Структура по [Anthropic Agent Skills spec](https://agentskills.io/specification).
 
 ## Как сюда что-то попадает
 
@@ -29,19 +29,19 @@ claude plugin install skill-creator@claude-plugins-official
 ## Что здесь лежит
 
 Дисциплина:
-- `evidence-before-action` — запрещает исходящее действие без свежей проверки фактов в том же ходе
+- `evidence-before-action`: запрещает исходящее действие без свежей проверки фактов в том же ходе
 
 Работа с wiki:
-- `wiki-llm-builder` — инициализирует новую wiki по теме
-- `wiki-ingest` — добавляет источник в wiki
-- `wiki-lint` — health-check
-- `wiki-query` — запрос с citations
+- `wiki-llm-builder`: инициализирует новую wiki по теме
+- `wiki-ingest`: добавляет источник в wiki
+- `wiki-lint`: health-check
+- `wiki-query`: запрос с citations
 
-План проекта — в `BRIEF.md` и `SPEC.md`.
+План проекта лежит в `BRIEF.md` и `SPEC.md`.
 
 ## Замечание: project vs personal skills
 
-- **`.claude/skills/`** (эта папка) — project-scoped. Коммитится в git, едет вместе с репо.
-- **`~/.claude/skills/`** — personal. Доступны во всех проектах. Сюда мы кладём только `skill-creator` (он мета-инструмент).
+- **`.claude/skills/`** (эта папка): project-scoped. Коммитится в git, едет вместе с репо.
+- **`~/.claude/skills/`**: personal. Доступны во всех проектах. Сюда мы кладём только `skill-creator` (он мета-инструмент).
 
 Если по ходу проекта получится skill общего назначения (например, обобщённый `wiki-query`), его можно скопировать в personal, чтобы использовать в других проектах.
