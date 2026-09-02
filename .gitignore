@@ -44,3 +44,6 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
+
+# Sample data fetched by infra/oracle/prepare.sh
+infra/oracle/vendor/

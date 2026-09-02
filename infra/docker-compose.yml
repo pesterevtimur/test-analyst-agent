@@ -1,0 +1,35 @@
+# All service ports bind to 127.0.0.1 only. Nothing is exposed to the network.
+# Reach the panel and traces through an ssh tunnel.
+
+name: sap-agent
+
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim-faststart
+    container_name: sap-agent-oracle
+    restart: unless-stopped
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?set ORACLE_PASSWORD in .env}
+      ORACLE_APP_USER: ${ORACLE_APP_USER:-agent_ro}
+      ORACLE_APP_USER_PASSWORD: ${ORACLE_APP_USER_PASSWORD:?set ORACLE_APP_USER_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./oracle/init:/container-entrypoint-initdb.d:ro
+      - ./oracle/vendor/sales_history:/opt/sh:ro
+    # Oracle Database Free is licence-capped at 2 GB RAM, 2 CPUs and 12 GB of
+    # user data, so the SGA cannot exceed 2 GB. The rest of this budget is
+    # headroom for the client processes that run inside the container during
+    # setup, chiefly sqlldr.
+    mem_limit: 3g
+    cpus: 2
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+volumes:
+  oracle-data:

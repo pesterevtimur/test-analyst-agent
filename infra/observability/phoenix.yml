@@ -1,0 +1,23 @@
+# Arize Phoenix: one container, SQLite on a volume.
+#
+# The fallback the brief names if Langfuse does not fit in memory. Measured
+# alternative, not an assumed one: see docs/adr/008-observability.md.
+
+name: sap-agent-obs
+
+services:
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: sap-agent-phoenix
+    restart: unless-stopped
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+    ports:
+      - "127.0.0.1:6006:6006"   # UI and OTLP over HTTP
+      - "127.0.0.1:4317:4317"   # OTLP over gRPC
+    volumes:
+      - phoenix-data:/mnt/data
+    mem_limit: 1g
+
+volumes:
+  phoenix-data:
