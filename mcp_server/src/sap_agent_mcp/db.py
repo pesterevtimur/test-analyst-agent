@@ -73,6 +73,23 @@ class Database:
             connection.call_timeout = timeout_seconds * 1000
         return connection
 
+    def replica_as_of(self) -> str | None:
+        """When the reporting replica was taken.
+
+        Every answer built on a replica has to say what moment it describes.
+        Without it, "revenue for the quarter" quietly means "as known at some
+        unstated time", and two answers taken days apart disagree for reasons
+        nobody can reconstruct afterwards.
+        """
+        try:
+            with self._connection(timeout_seconds=5) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT as_of FROM sh.replica_info")
+                row = cursor.fetchone()
+        except oracledb.DatabaseError:
+            return None
+        return row[0].isoformat() if row and row[0] is not None else None
+
     def explain(self, sql: str, *, statement_id: str) -> Plan:
         """Estimate the query without running it.
 

@@ -1,9 +1,10 @@
 """Smoke check for the Sales History install.
 
-Verifies three things day 1 must prove:
-  1. the read-only user can connect,
-  2. a join across SALES and TIMES returns data,
-  3. the read-only user really is read-only.
+Verifies what the environment must prove:
+  1. the read-only user can connect to the reporting replica,
+  2. a join across four tables returns data,
+  3. the read-only user really is read-only,
+  4. the same user has no way into the transactional database at all.
 
 Run:
     docker run --rm --network host -v "$PWD/infra/oracle:/w:ro" \
@@ -20,7 +21,7 @@ import oracledb
 def main() -> int:
     user = os.environ.get("ORACLE_APP_USER", "agent_ro")
     password = os.environ["ORACLE_APP_USER_PASSWORD"]
-    dsn = os.environ.get("ORACLE_DSN", "127.0.0.1:1521/FREEPDB1")
+    dsn = os.environ.get("ORACLE_DSN", "127.0.0.1:1521/REPPDB1")
 
     print(f"connecting as {user} to {dsn} (thin mode, python-oracledb {oracledb.__version__})")
     with oracledb.connect(user=user, password=password, dsn=dsn) as conn:
@@ -73,6 +74,26 @@ def main() -> int:
             else:
                 print(f"   {label:<20}ALLOWED. This is a hole, fix it before going further.")
                 return 1
+
+    print("\n6. the agent has no path to the transactional database")
+    primary = dsn.rsplit("/", 1)[0] + "/FREEPDB1"
+    try:
+        oracledb.connect(user=user, password=password, dsn=primary)
+    except oracledb.DatabaseError as exc:
+        print(f"   {primary}: refused, {str(exc.args[0].message).splitlines()[0]}")
+    else:
+        print(f"   {primary}: CONNECTED. The agent can reach the primary, fix this first.")
+        return 1
+
+    print("\n7. the replica states what moment it describes")
+    with oracledb.connect(user=user, password=password, dsn=dsn) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT as_of, source_pdb, method FROM sh.replica_info")
+        row = cur.fetchone()
+        if row is None:
+            print("   replica_info is empty: answers could not state their as-of moment")
+            return 1
+        print(f"   as of {row[0]:%Y-%m-%d %H:%M:%S%z}, from {row[1]}, by {row[2]}")
 
     print("\nall checks passed")
     return 0

@@ -72,7 +72,7 @@ class Settings:
         return cls(
             oracle_user=os.environ.get("ORACLE_APP_USER", "agent_ro"),
             oracle_password=password,
-            oracle_dsn=os.environ.get("ORACLE_DSN", "127.0.0.1:1521/FREEPDB1"),
+            oracle_dsn=os.environ.get("ORACLE_DSN", "127.0.0.1:1521/REPPDB1"),
             semantic_sources=_paths("SEMANTIC_SOURCES", ["semantic/sap"]),
             state_path=Path(os.environ.get("STATE_PATH", "state/sap-agent.db")),
             host=os.environ.get("MCP_HOST", "127.0.0.1"),

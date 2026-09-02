@@ -68,6 +68,7 @@ class ResultView(BaseModel):
     truncated: bool
     duration_ms: int
     sanity: dict[str, Any]
+    data_as_of: str | None = None
 
 
 class Tools:
@@ -110,8 +111,19 @@ class Tools:
         else:
             tables = self.model.tables
 
+        as_of = self.db.replica_as_of()
         payload = {
             "ok": True,
+            # The agent reads a reporting replica, not the transactional system,
+            # so every answer has to carry the moment the data describes.
+            "data_as_of": as_of,
+            "source": (
+                "Отчётная реплика. Данные на "
+                + (as_of or "неизвестный момент")
+                + ". Это копия транзакционной базы, а не она сама, поэтому "
+                "изменения после этого момента в ответах не видны. Указывайте "
+                "этот момент в ответе бизнесу."
+            ),
             "tables": [
                 {
                     "name": self.model.qualified(name),
@@ -373,6 +385,7 @@ class Tools:
             sanity=report.worst,
         )
         return ResultView(
+            data_as_of=self.db.replica_as_of(),
             result_id=result.id, columns=rows.columns,
             rows=[[_jsonable(v) for v in row] for row in rows.rows],
             row_count=rows.row_count, truncated=rows.truncated,

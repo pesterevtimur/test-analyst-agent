@@ -8,7 +8,8 @@
 
 set -euo pipefail
 
-PDB=FREEPDB1
+# Reporting replica. The primary has no agent account and no reporting views.
+PDB=REPPDB1
 AGENT_USER="${ORACLE_APP_USER:-agent_ro}"
 AGENT_PASSWORD="${ORACLE_APP_USER_PASSWORD:?ORACLE_APP_USER_PASSWORD must be set}"
 

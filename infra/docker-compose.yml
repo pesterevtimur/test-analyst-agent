@@ -42,8 +42,9 @@ services:
     environment:
       ORACLE_APP_USER: ${ORACLE_APP_USER:-agent_ro}
       ORACLE_APP_USER_PASSWORD: ${ORACLE_APP_USER_PASSWORD:?set ORACLE_APP_USER_PASSWORD in .env}
-      # Inside the compose network the database is reached by service name.
-      ORACLE_DSN: oracle:1521/FREEPDB1
+      # The reporting replica, never the transactional database. The agent has
+      # no account on FREEPDB1 at all, so this is a boundary and not a setting.
+      ORACLE_DSN: oracle:1521/REPPDB1
       SEMANTIC_SOURCES: semantic/sap
       STATE_PATH: /state/sap-agent.db
       MCP_HOST: 0.0.0.0

@@ -19,7 +19,8 @@
 
 set -euo pipefail
 
-PDB=FREEPDB1
+# Reporting replica. The primary has no agent account and no reporting views.
+PDB=REPPDB1
 SH_PASSWORD="${SH_PASSWORD:-$ORACLE_PASSWORD}"
 
 sqlplus -s -L "sh/${SH_PASSWORD}@localhost/${PDB}" <<'SQL'
