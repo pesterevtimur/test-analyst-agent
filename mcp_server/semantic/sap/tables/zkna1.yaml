@@ -1,0 +1,95 @@
+name: ZKNA1
+title: Общие данные клиента
+description: Справочник клиентов. Один клиент, одна строка.
+grain: одна строка это один клиент в одном манданте
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: Номер контура, фильтр обязателен.
+    required_filter: "= '100'"
+  - name: KUNNR
+    title: Номер клиента
+    type: string
+    key: true
+    description: Номер клиента, подбит нулями слева до 10 знаков.
+  - name: NAME1
+    title: Наименование клиента
+    type: string
+    pii: true
+    description: Имя и фамилия. Персональные данные, не выдаётся.
+  - name: LAND1
+    title: Страна
+    type: string
+    description: Код страны по ISO, две буквы. Расшифровка в ZT005T.
+  - name: ORT01
+    title: Город
+    type: string
+    description: Город клиента.
+  - name: PSTLZ
+    title: Почтовый индекс
+    type: string
+    description: Почтовый индекс клиента.
+  - name: REGIO
+    title: Регион
+    type: string
+    description: Область или штат. Не путать с макрорегионом из ZT005T.
+  - name: STRAS
+    title: Улица и дом
+    type: string
+    pii: true
+    description: Адрес. Персональные данные, не выдаётся.
+  - name: TELF1
+    title: Телефон
+    type: string
+    pii: true
+    description: Телефон. Персональные данные, не выдаётся.
+  - name: SMTP_ADDR
+    title: Электронная почта
+    type: string
+    pii: true
+    description: Почта. Персональные данные, не выдаётся.
+  - name: ERDAT
+    title: Дата создания записи
+    type: date
+    description: Дата заведения клиента.
+  - name: LVORM
+    title: Признак удаления
+    type: string
+    description: >
+      Пробел означает действующего клиента, X означает помеченного к удалению.
+    values:
+      " ": действующий клиент
+      "X": помечен к удалению
+relations:
+  - to: ZT005T
+    kind: many_to_one
+    join_on:
+      - {left: LAND1, right: LAND1}
+      - {left: MANDT, right: MANDT}
+    description: наименование страны и макрорегион
+gotchas:
+  - id: lvorm-filter
+    severity: critical
+    text: >
+      Помеченные к удалению клиенты остаются в таблице. Забыли фильтр, и в
+      отчёт попадают неактуальные записи. В этих данных из 55 500 клиентов
+      действующих 10 621, а помеченных 44 879, то есть большинство. Ошибка
+      завышает любую выборку по клиентам в разы.
+    wrong: SELECT COUNT(*) FROM sh.zkna1 WHERE mandt = '100'
+    right: SELECT COUNT(*) FROM sh.zkna1 WHERE mandt = '100' AND lvorm = ' '
+  - id: lvorm-inverted
+    severity: critical
+    text: >
+      Смысл признака легко перепутать наоборот, и тогда запрос отработает без
+      единой ошибки и вернёт пусто. Так уже случилось при построении этой
+      витрины 2 сентября 2026. Признак правильный тот, при котором у выбранных
+      клиентов есть продажи: проверяйте счётчиком, а не чтением названия поля.
+  - id: regio-vs-region
+    severity: warning
+    text: >
+      REGIO это область или штат внутри страны. Макрорегион вроде Европы или
+      Америк лежит в ZT005T. Перепутать легко, названия похожи.
+typical_filters:
+  - "mandt = '100'"
+  - "lvorm = ' '"

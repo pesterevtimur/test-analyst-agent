@@ -1,0 +1,73 @@
+name: ZMARA
+title: Общие данные материала
+description: Справочник материалов, то есть товаров. Один материал, одна строка.
+grain: одна строка это один материал в одном манданте
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: Номер контура, фильтр обязателен.
+    required_filter: "= '100'"
+  - name: MATNR
+    title: Номер материала
+    type: string
+    key: true
+    description: Номер материала, подбит нулями слева до 18 знаков.
+  - name: MAKTX
+    title: Наименование материала
+    type: string
+    description: >
+      Название на языке контура. В настоящем SAP лежит в отдельной таблице
+      текстов MAKT с разрезом по языку, здесь для простоты сведено в ZMARA.
+  - name: MTART
+    title: Тип материала
+    type: string
+    description: Тип материала, укрупнённая группа вроде электроники или ПО.
+  - name: MATKL
+    title: Группа материалов
+    type: string
+    description: Группа материалов, разрез мельче типа.
+  - name: MEINS
+    title: Базисная единица измерения
+    type: string
+    description: >
+      Единица, в которой измеряется количество FKIMG. Складывать количества по
+      материалам с разными единицами нельзя.
+  - name: NTGEW
+    title: Весовая категория
+    type: number
+    description: Категория веса материала.
+  - name: NETPR
+    title: Цена по прайс-листу
+    type: number
+    description: >
+      Цена из прайс-листа, а не фактическая цена продажи. Фактическая выручка
+      считается по NETWR из ZVBRP: продажи идут со скидками и по акциям.
+  - name: ERSDA
+    title: Дата создания записи
+    type: date
+    description: Дата заведения материала.
+  - name: LVORM
+    title: Признак удаления
+    type: string
+    description: Пробел означает действующий материал, X означает помеченный к удалению.
+    values:
+      " ": действующий материал
+      "X": помечен к удалению
+gotchas:
+  - id: netpr-is-not-revenue
+    severity: critical
+    text: >
+      NETPR это цена прайс-листа. Умножать её на количество, чтобы получить
+      выручку, неверно: продажи идут со скидками и акциями, и результат
+      завышается. Выручка берётся из NETWR в ZVBRP.
+    wrong: SELECT SUM(m.netpr * v.fkimg) FROM sh.zvbrp v JOIN sh.zmara m ON m.matnr = v.matnr
+    right: SELECT SUM(v.netwr) FROM sh.zvbrp v
+  - id: meins-mixing
+    severity: warning
+    text: >
+      Количества FKIMG выражены в базисной единице материала. Сумма количеств
+      по материалам с разными единицами измерения смысла не имеет.
+typical_filters:
+  - "mandt = '100'"
+  - "lvorm = ' '"

@@ -1,0 +1,75 @@
+name: ZKEKO
+title: Калькуляция себестоимости
+description: >
+  Себестоимость и плановая цена единицы материала по датам, каналам и акциям.
+  Нужна для вопросов про маржу.
+grain: одна строка это себестоимость одного материала на одну дату в одном канале и одной акции
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: Номер контура, фильтр обязателен.
+    required_filter: "= '100'"
+  - name: MATNR
+    title: Номер материала
+    type: string
+    key: true
+    description: Номер материала, подбит нулями слева до 18 знаков.
+  - name: KADAT
+    title: Дата калькуляции
+    type: date
+    key: true
+    description: Дата, на которую действует эта себестоимость.
+  - name: VTWEG
+    title: Канал сбыта
+    type: string
+    key: true
+    description: Канал, для которого действует себестоимость.
+  - name: AKTNR
+    title: Номер акции
+    type: string
+    key: true
+    description: Акция, для которой действует себестоимость.
+  - name: STPRS
+    title: Себестоимость единицы
+    type: number
+    unit_column: WAERS
+    description: Себестоимость одной единицы материала.
+  - name: VERPR
+    title: Плановая цена единицы
+    type: number
+    unit_column: WAERS
+    description: >
+      Плановая цена, не фактическая. Фактическая выручка лежит в NETWR у
+      позиции фактуры.
+  - name: WAERS
+    title: Валюта
+    type: string
+    description: Валюта, в которой выражены STPRS и VERPR.
+relations:
+  - to: ZMARA
+    kind: many_to_one
+    join_on:
+      - {left: MATNR, right: MATNR}
+      - {left: MANDT, right: MANDT}
+    description: материал, к которому относится калькуляция
+gotchas:
+  - id: cost-grain-explosion
+    severity: critical
+    text: >
+      Ключ таблицы это материал, дата, канал и акция одновременно. Соединение
+      позиций фактуры с себестоимостью только по материалу задваивает строки в
+      разы и завышает и выручку, и себестоимость. Соединять надо по всем
+      четырём полям.
+    wrong: JOIN sh.zkeko c ON c.matnr = v.matnr
+    right: >
+      JOIN sh.zkeko c ON c.matnr = v.matnr AND c.kadat = v.fkdat
+      AND c.vtweg = v.vtweg AND c.aktnr = v.aktnr AND c.mandt = v.mandt
+  - id: margin-definition
+    severity: warning
+    text: >
+      Маржа это выручка минус себестоимость, умноженная на количество, а не
+      разница цен. Плановая цена VERPR для расчёта маржи не годится: продажи
+      идут по фактической цене из NETWR.
+typical_filters:
+  - "mandt = '100'"

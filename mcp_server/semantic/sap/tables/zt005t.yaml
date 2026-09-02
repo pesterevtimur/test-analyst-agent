@@ -1,0 +1,50 @@
+name: ZT005T
+title: Тексты стран
+description: Наименования стран и их принадлежность к макрорегионам.
+grain: одна строка это одна страна на одном языке
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: Номер контура, фильтр обязателен.
+    required_filter: "= '100'"
+  - name: SPRAS
+    title: Язык
+    type: string
+    key: true
+    description: >
+      Код языка. Таблицы текстов в SAP хранят по строке на язык, поэтому в
+      соединении нужен фильтр по языку, иначе строки задвоятся.
+    values:
+      E: английский, единственный язык в этих данных
+  - name: LAND1
+    title: Код страны
+    type: string
+    key: true
+    description: Код страны по ISO, две буквы.
+  - name: LANDX
+    title: Наименование страны
+    type: string
+    description: Название страны.
+  - name: REGIO_TEXT
+    title: Макрорегион
+    type: string
+    description: >
+      Укрупнённый регион: Европа, Америки, Азия, Океания, Ближний Восток и
+      Африка. Это то, что обычно имеют в виду, когда просят разрез по регионам.
+  - name: SUBREGIO_TEXT
+    title: Субрегион
+    type: string
+    description: Разрез мельче макрорегиона, например Западная Европа.
+gotchas:
+  - id: spras-doubling
+    severity: critical
+    text: >
+      Соединение с таблицей текстов без фильтра по языку задваивает строки по
+      числу языков и завышает суммы. В этих данных язык один, поэтому ошибка не
+      проявится здесь и проявится в настоящем контуре.
+    wrong: JOIN sh.zt005t t ON t.land1 = k.land1
+    right: JOIN sh.zt005t t ON t.land1 = k.land1 AND t.mandt = k.mandt AND t.spras = 'E'
+typical_filters:
+  - "mandt = '100'"
+  - "spras = 'E'"

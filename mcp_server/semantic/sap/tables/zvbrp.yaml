@@ -1,0 +1,131 @@
+name: ZVBRP
+title: Позиции фактуры
+description: >
+  Строки выставленных счетов. Основная таблица фактов: всё, что считается про
+  выручку и количество, считается отсюда.
+grain: одна строка это одна позиция фактуры, то есть один материал в одном счёте
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: >
+      Номер контура. В одной базе SAP живут несколько независимых контуров, и
+      строки всех контуров лежат в одной таблице.
+    required_filter: "= '100'"
+    values:
+      "100": рабочий контур, единственный в этой установке
+  - name: MATNR
+    title: Номер материала
+    type: string
+    key: true
+    description: >
+      Ссылка на материал. Хранится подбитым нулями слева до 18 знаков.
+  - name: KUNNR
+    title: Номер клиента
+    type: string
+    key: true
+    description: Ссылка на клиента, подбит нулями слева до 10 знаков.
+  - name: FKDAT
+    title: Дата фактуры
+    type: date
+    key: true
+    description: >
+      Дата выставления счёта. По ней же связываемся с календарём ZT009B.
+      Данные покрывают 2019-2023 годы.
+  - name: VTWEG
+    title: Канал сбыта
+    type: string
+    description: Ссылка на канал сбыта, две цифры с ведущим нулём.
+  - name: FKIMG
+    title: Количество
+    type: number
+    description: Отфактурованное количество в базовой единице измерения материала.
+  - name: NETWR
+    title: Стоимость нетто
+    type: number
+    unit_column: WAERK
+    description: >
+      Сумма по позиции без налогов, в валюте документа. Складывать суммы в
+      разных валютах нельзя, даже если запрос отработает.
+  - name: WAERK
+    title: Валюта документа
+    type: string
+    description: Валюта, в которой выражено поле NETWR.
+    values:
+      USD: доллар США, единственная валюта в этих данных
+  - name: AKTNR
+    title: Номер акции
+    type: string
+    description: >
+      Ссылка на промоакцию. Значение 0000000999 означает «без акции», это не
+      настоящая акция, а заглушка.
+relations:
+  - to: ZKNA1
+    kind: many_to_one
+    join_on:
+      - {left: KUNNR, right: KUNNR}
+      - {left: MANDT, right: MANDT}
+    description: клиент, которому выставлен счёт
+  - to: ZMARA
+    kind: many_to_one
+    join_on:
+      - {left: MATNR, right: MATNR}
+      - {left: MANDT, right: MANDT}
+    description: материал позиции
+  - to: ZT009B
+    kind: many_to_one
+    join_on:
+      - {left: FKDAT, right: BUDAT}
+      - {left: MANDT, right: MANDT}
+    description: календарь, нужен для периодов, кварталов и лет
+  - to: ZTVTWT
+    kind: many_to_one
+    join_on:
+      - {left: VTWEG, right: VTWEG}
+      - {left: MANDT, right: MANDT}
+    description: наименование канала сбыта
+  - to: WAKH
+    kind: many_to_one
+    join_on:
+      - {left: AKTNR, right: AKTNR}
+      - {left: MANDT, right: MANDT}
+    description: акция, по которой прошла продажа
+  - to: ZKEKO
+    kind: many_to_one
+    join_on:
+      - {left: MATNR, right: MATNR}
+      - {left: FKDAT, right: KADAT}
+      - {left: VTWEG, right: VTWEG}
+      - {left: AKTNR, right: AKTNR}
+      - {left: MANDT, right: MANDT}
+    description: >
+      себестоимость позиции. Соединение идёт по всем пяти полям: по одному
+      материалу строк себестоимости много, и соединение только по материалу
+      задваивает выручку
+gotchas:
+  - id: mandt-required
+    severity: critical
+    text: >
+      Фильтр по манданту обязателен в каждом запросе к каждой таблице. Забыли,
+      и в выборку попадают строки чужого контура. В этой установке контур один,
+      поэтому ошибка не проявится на демонстрации и проявится в проде.
+    wrong: SELECT SUM(netwr) FROM sh.zvbrp
+    right: SELECT SUM(netwr) FROM sh.zvbrp WHERE mandt = '100'
+  - id: matnr-padding
+    severity: critical
+    text: >
+      Номер материала подбит нулями слева до 18 знаков. Соединение или фильтр
+      по обычному числу молча вернёт ноль строк: ошибки не будет, будет пустой
+      ответ. Проверено на этих данных: по '13' ноль строк, по подбитому 6002.
+    wrong: WHERE matnr = '13'
+    right: WHERE matnr = LPAD('13', 18, '0')
+  - id: currency-sum
+    severity: warning
+    text: >
+      NETWR выражено в валюте из WAERK. Суммирование по нескольким валютам
+      даёт число без смысла. В этих данных валюта одна, но привычка складывать
+      без разреза по валюте переносится в контур, где их несколько.
+typical_filters:
+  - "mandt = '100'"
+  - "fkdat BETWEEN DATE '2021-04-01' AND DATE '2021-06-30'"
+  - "waerk = 'USD'"

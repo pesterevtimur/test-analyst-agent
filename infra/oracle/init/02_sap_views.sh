@@ -98,6 +98,30 @@ SELECT '100'                                  AS mandt,
        ch.channel_class                       AS vclass
 FROM channels ch;
 
+-- WAKH: promotion header, from PROMOTIONS.
+CREATE OR REPLACE VIEW wakh AS
+SELECT '100'                                     AS mandt,
+       LPAD(TO_CHAR(p.promo_id), 10, '0')        AS aktnr,
+       p.promo_name                              AS aktxt,
+       SUBSTR(p.promo_category, 1, 4)            AS akart,
+       p.promo_subcategory                       AS aktyp,
+       p.promo_cost                              AS aktko,
+       p.promo_begin_date                        AS datab,
+       p.promo_end_date                          AS datbi
+FROM promotions p;
+
+-- ZKEKO: standard cost estimate, from COSTS.
+CREATE OR REPLACE VIEW zkeko AS
+SELECT '100'                                     AS mandt,
+       LPAD(TO_CHAR(c.prod_id), 18, '0')         AS matnr,
+       c.time_id                                 AS kadat,
+       LPAD(TO_CHAR(c.channel_id), 2, '0')       AS vtweg,
+       LPAD(TO_CHAR(c.promo_id), 10, '0')        AS aktnr,
+       c.unit_cost                               AS stprs,
+       c.unit_price                              AS verpr,
+       'USD'                                     AS waers
+FROM costs c;
+
 -- ZT009B: fiscal period assignment, from TIMES.
 -- SPMON is the SAP period key, year and month glued together with no separator.
 CREATE OR REPLACE VIEW zt009b AS
@@ -112,11 +136,11 @@ FROM times t;
 EXIT
 SQL
 
-echo "==> SAP-shaped views created: ZMARA, ZKNA1, ZVBRP, ZT005T, ZTVTWT, ZT009B"
+echo "==> SAP-shaped views created: ZMARA, ZKNA1, ZVBRP, ZT005T, ZTVTWT, ZT009B, WAKH, ZKEKO"
 
 sqlplus -s -L "sh/${SH_PASSWORD}@localhost/${PDB}" <<'SQL'
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT '==> ' || view_name || ': ' || COUNT(*) OVER () || ' views total'
-  FROM user_views WHERE view_name LIKE 'Z%' ORDER BY view_name;
+  FROM user_views WHERE view_name LIKE 'Z%' OR view_name = 'WAKH' ORDER BY view_name;
 EXIT
 SQL

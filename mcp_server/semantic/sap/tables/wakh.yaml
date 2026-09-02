@@ -1,0 +1,67 @@
+name: WAKH
+title: Заголовок промоакции
+description: >
+  Справочник акций: что за акция, когда шла и сколько стоила.
+grain: одна строка это одна акция
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: Номер контура, фильтр обязателен.
+    required_filter: "= '100'"
+  - name: AKTNR
+    title: Номер акции
+    type: string
+    key: true
+    description: Номер акции, подбит нулями слева до 10 знаков.
+  - name: AKTXT
+    title: Наименование акции
+    type: string
+    description: Название акции.
+  - name: AKART
+    title: Тип акции
+    type: string
+    description: Укрупнённый тип, например интернет или почтовая рассылка.
+  - name: AKTYP
+    title: Вид акции
+    type: string
+    description: Разрез мельче типа, например скидка постоянному клиенту.
+  - name: AKTKO
+    title: Стоимость акции
+    type: number
+    description: >
+      Затраты на проведение акции. Не выручка и не скидка, а расход на саму
+      акцию.
+  - name: DATAB
+    title: Дата начала
+    type: date
+    description: Первый день действия акции.
+  - name: DATBI
+    title: Дата окончания
+    type: date
+    description: Последний день действия акции.
+relations:
+  - to: ZVBRP
+    kind: one_to_many
+    join_on:
+      - {left: AKTNR, right: AKTNR}
+      - {left: MANDT, right: MANDT}
+    description: позиции фактуры, проданные по этой акции
+gotchas:
+  - id: promo-placeholder-row
+    severity: critical
+    text: >
+      В справочнике есть строка с номером 0000000999. Это не акция, а
+      заглушка, которой помечены продажи без акции. Она попадает в любой
+      отчёт по акциям и всегда оказывается крупнейшей. Её надо исключать.
+    wrong: SELECT aktxt, SUM(v.netwr) FROM sh.zvbrp v JOIN sh.wakh a ON a.aktnr = v.aktnr GROUP BY aktxt
+    right: "... WHERE v.aktnr <> '0000000999'"
+  - id: promo-dates-vs-sale-date
+    severity: warning
+    text: >
+      Даты акции и дата фактуры это разные вещи. Позиция может быть привязана
+      к акции, чьи даты не покрывают дату продажи. Считать по датам акции
+      вместо даты фактуры неверно.
+typical_filters:
+  - "mandt = '100'"
+  - "aktnr <> '0000000999'"

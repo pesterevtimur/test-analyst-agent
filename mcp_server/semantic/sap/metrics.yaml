@@ -1,0 +1,145 @@
+# Объявленные метрики домена SAP.
+#
+# Правило для агента жёсткое: если метрика объявлена здесь, использовать её и
+# не считать по-своему. Если нужной метрики нет, агент пишет выражение сам, но
+# обязан пометить ответ строкой о том, что определение не из словаря.
+#
+# Смысл правила в том, что выручка должна считаться одинаково всегда. Два
+# ответа с разными числами разрушают доверие быстрее, чем отсутствие ответа.
+
+metrics:
+  - name: revenue
+    title: Выручка
+    description: >
+      Сумма стоимости нетто по позициям фактуры. Это фактическая выручка со
+      скидками и акциями, а не цена прайс-листа, умноженная на количество.
+    base_table: ZVBRP
+    expression: SUM(zvbrp.netwr)
+    unit_column: zvbrp.waerk
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: revenue-not-from-price
+        severity: critical
+        text: >
+          Выручка не считается как цена по прайс-листу, умноженная на
+          количество. Такой счёт завышает результат на величину скидок и акций.
+
+  - name: quantity_sold
+    title: Проданное количество
+    description: >
+      Сумма отфактурованного количества. Осмысленна только внутри одной
+      базисной единицы измерения.
+    base_table: ZVBRP
+    expression: SUM(zvbrp.fkimg)
+    unit_column: zmara.meins
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: quantity-unit-mixing
+        severity: warning
+        text: >
+          Суммирование количеств по материалам с разными единицами измерения
+          даёт число без смысла. Нужен разрез по MEINS или ограничение одним
+          типом материала.
+
+  - name: promo_revenue
+    title: Выручка по акциям
+    description: >
+      Выручка по позициям, где указана настоящая акция. Заглушка 0000000999
+      означает продажу без акции и в эту метрику не входит.
+    base_table: ZVBRP
+    expression: SUM(CASE WHEN zvbrp.aktnr <> '0000000999' THEN zvbrp.netwr ELSE 0 END)
+    unit_column: zvbrp.waerk
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: promo-placeholder
+        severity: critical
+        text: >
+          Значение 0000000999 в поле акции это не акция, а заглушка «акции не
+          было». Считать её как акцию значит объявить промо-выручкой почти всю
+          выручку.
+
+  - name: promo_share
+    title: Доля промо
+    description: >
+      Доля выручки, полученной по акциям, в общей выручке. Значение от 0 до 1.
+    base_table: ZVBRP
+    expression: >
+      SUM(CASE WHEN zvbrp.aktnr <> '0000000999' THEN zvbrp.netwr ELSE 0 END)
+      / NULLIF(SUM(zvbrp.netwr), 0)
+    unit: доля от единицы
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: promo-share-zero-division
+        severity: warning
+        text: >
+          Знаменатель обёрнут в NULLIF: на пустой выборке доля должна быть
+          неопределена, а не обрушить запрос делением на ноль.
+
+  - name: customers_count
+    title: Число клиентов
+    description: >
+      Количество различных клиентов. Считается по номеру клиента, а не по
+      строкам фактуры: один клиент делает много покупок.
+    base_table: ZVBRP
+    expression: COUNT(DISTINCT zvbrp.kunnr)
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: customers-need-distinct
+        severity: critical
+        text: >
+          Без DISTINCT считаются строки фактуры, а не клиенты. Разница
+          примерно в сто тридцать раз на этих данных.
+
+  - name: average_check
+    title: Средний чек
+    description: >
+      Средняя стоимость нетто одной позиции фактуры. Это средняя позиция, а не
+      средний счёт: документа в этих данных нет, есть строки.
+    base_table: ZVBRP
+    expression: AVG(zvbrp.netwr)
+    unit_column: zvbrp.waerk
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: average-check-is-per-line
+        severity: warning
+        text: >
+          Название обманчиво. В исходных данных нет номера документа, поэтому
+          «чек» здесь это одна позиция. Если бизнес спрашивает средний чек в
+          обычном смысле, ответ на этих данных дать нельзя, и это надо сказать.
+
+  - name: margin
+    title: Маржа
+    description: >
+      Выручка минус себестоимость проданного. Себестоимость берётся из
+      калькуляции и умножается на количество, а не вычитается как разница цен.
+    base_table: ZVBRP
+    expression: SUM(zvbrp.netwr - zkeko.stprs * zvbrp.fkimg)
+    unit_column: zvbrp.waerk
+    required_filters:
+      - "zvbrp.mandt = '100'"
+    gotchas:
+      - id: margin-join-grain
+        severity: critical
+        text: >
+          Соединение с калькуляцией идёт по материалу, дате, каналу и акции
+          одновременно. Соединение только по материалу задваивает строки и
+          делает бессмысленными и выручку, и маржу.
+
+  - name: margin_percent
+    title: Маржинальность
+    description: >
+      Доля маржи в выручке. Значение от 0 до 1, на пустой выборке не
+      определено, а не ноль.
+    base_table: ZVBRP
+    expression: >
+      SUM(zvbrp.netwr - zkeko.stprs * zvbrp.fkimg)
+      / NULLIF(SUM(zvbrp.netwr), 0)
+    unit: доля от единицы
+    required_filters:
+      - "zvbrp.mandt = '100'"

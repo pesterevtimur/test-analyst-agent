@@ -1,0 +1,41 @@
+name: ZTVTWT
+title: Тексты каналов сбыта
+description: Наименования каналов сбыта.
+grain: одна строка это один канал сбыта на одном языке
+columns:
+  - name: MANDT
+    title: Мандант
+    type: string
+    description: Номер контура, фильтр обязателен.
+    required_filter: "= '100'"
+  - name: SPRAS
+    title: Язык
+    type: string
+    key: true
+    description: Код языка, в соединении нужен фильтр по языку.
+    values:
+      E: английский, единственный язык в этих данных
+  - name: VTWEG
+    title: Канал сбыта
+    type: string
+    key: true
+    description: Код канала, две цифры с ведущим нулём.
+  - name: VTEXT
+    title: Наименование канала
+    type: string
+    description: Название канала сбыта, например прямые продажи или интернет.
+  - name: VCLASS
+    title: Класс канала
+    type: string
+    description: Укрупнённая группировка каналов.
+gotchas:
+  - id: vtweg-padding
+    severity: warning
+    text: >
+      Код канала это строка с ведущим нулём, а не число. Фильтр по числу 3
+      вернёт пусто, нужен '03'.
+    wrong: WHERE vtweg = 3
+    right: WHERE vtweg = '03'
+typical_filters:
+  - "mandt = '100'"
+  - "spras = 'E'"
