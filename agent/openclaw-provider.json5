@@ -1,0 +1,39 @@
+// DeepSeek as an OpenAI-compatible provider for OpenClaw.
+//
+// Apply with:
+//   openclaw config patch --file agent/openclaw-provider.json5
+//
+// The key itself is never written here: apiKey is a reference to the
+// DEEPSEEK_API_KEY environment variable, which comes from .env.
+//
+// Numbers below are measured, not copied from a brochure. See
+// docs/adr/004-model-provider.md.
+{
+  models: {
+    providers: {
+      deepseek: {
+        baseUrl: "https://api.deepseek.com",
+        api: "openai-completions",
+        auth: "api-key",
+        apiKey: { source: "env", provider: "default", id: "DEEPSEEK_API_KEY" },
+        timeoutSeconds: 180,
+        models: [
+          {
+            id: "deepseek-v4-pro",
+            name: "DeepSeek V4 Pro",
+            // The model thinks before answering, and it thinks a lot: a single
+            // tool call measured 770 reasoning tokens out of 954 output tokens.
+            // A 600-token budget produced no tool call at all.
+            reasoning: true,
+            contextWindow: 1000000,
+            maxTokens: 8000,
+            // USD per million tokens, off-peak rates from the DeepSeek price
+            // list checked on 2026-09-02. Peak hours (01:00-04:00 and
+            // 06:00-10:00 UTC on weekdays) are double.
+            cost: { input: 0.66, output: 1.98 },
+          },
+        ],
+      },
+    },
+  },
+}
