@@ -1,0 +1,45 @@
+{
+  "skill_name": "wiki-query",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What does the wiki say about three-layer-architecture? target_wiki: <TARGET_WIKI>.",
+      "expected_output": "Coverage: covered. Answer drawn from concepts/three-layer-architecture.md plus possibly llm-wiki-pattern.md and the source page; every factual sentence carries a `^[src:karpathy-llm-wiki-2026:§...]` marker reused from those pages.",
+      "files": [],
+      "expectations": [
+        "Output starts with `# wiki-query answer —` and contains the deterministic template (Question, Coverage, Answer, Sources used, Confidence)",
+        "Coverage is `covered`",
+        "Answer contains at least one `^[src:karpathy-llm-wiki-2026:` citation marker",
+        "Every citation marker in the answer points at a heading slug that exists in the source raw file (one of: the-core-idea, architecture, operations, indexing-and-logging, optional-cli-tools, tips-and-tricks, why-this-works, note)",
+        "`## Sources used` lists at least `concepts/three-layer-architecture.md`",
+        "Skill did not modify any wiki content (read-only)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "What does this wiki say about prompt injection defenses? target_wiki: <TARGET_WIKI>.",
+      "expected_output": "Coverage: none. The wiki has no page on prompt injection. Skill says so explicitly and recommends `wiki-ingest`. No fabricated citations.",
+      "files": [],
+      "expectations": [
+        "Coverage is `none` (or, at most, `partial` if a tangential mention exists)",
+        "The Answer section explicitly says the wiki does not cover this topic — does NOT silently provide a memory-based answer",
+        "The Answer section contains zero `^[src:` markers (no fabricated citations)",
+        "The Answer recommends `wiki-ingest` as the right next action, OR notes the topic is out of scope and recommends a new wiki via `wiki-llm-builder`",
+        "If a memory-based off-wiki answer IS provided, it appears in a clearly separate `Off-wiki answer` or `(Off-wiki note)` subsection, NOT mixed into the cited body"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "List all entities in this wiki with one-line descriptions. target_wiki: <TARGET_WIKI>.",
+      "expected_output": "A structured list (table or bullets) enumerating each entity page in entities/, with a one-line description per row. Sources used should be the entity pages themselves.",
+      "files": [],
+      "expectations": [
+        "Coverage is `covered`",
+        "Answer is a structured list (markdown table or bullets), NOT a prose paragraph",
+        "The list contains at least the entities currently in the wiki: qmd, obsidian",
+        "Each row/bullet has a one-line description, not just the slug",
+        "`## Sources used` lists `entities/qmd.md` and `entities/obsidian.md`"
+      ]
+    }
+  ]
+}

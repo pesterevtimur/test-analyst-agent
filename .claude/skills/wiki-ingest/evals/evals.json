@@ -1,0 +1,48 @@
+{
+  "skill_name": "wiki-ingest",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Please ingest `fixture-happy-path-2025.md` into the wiki at `<TARGET_WIKI>`. The file is already sitting in that wiki's `raw/`. target_wiki: `<TARGET_WIKI>`. edition: 2025.",
+      "expected_output": "A <TARGET_WIKI>/sources/fixture-happy-path-2025.md page is created with frontmatter (type:source, slug, edition:2025, status:draft). At least one entity or concept page is created. Every factual sentence on every created page carries a citation marker pointing at a real heading slug from the fixture. <TARGET_WIKI>/log.md gets an ingest entry naming the source-id and the counts. No table extraction (this fixture has none). No prose retelling of anything that should be a table.",
+      "files": ["evals/files/fixture-happy-path-2025.md"],
+      "expectations": [
+        "<TARGET_WIKI>/sources/fixture-happy-path-2025.md exists with type:source and edition:2025 in its YAML frontmatter",
+        "At least one of <TARGET_WIKI>/entities/*.md or <TARGET_WIKI>/concepts/*.md was created",
+        "Every factual sentence on every created page has a citation marker `^[src:fixture-happy-path-2025:§<heading-slug>]`",
+        "Every citation marker points at a heading slug that actually exists in the fixture (one of: origin, architecture, adoption)",
+        "<TARGET_WIKI>/log.md has a new line of the form `## [<date>] ingest | fixture-happy-path-2025 | <N> entities, <M> concepts, <K> tables`",
+        "No files in <TARGET_WIKI>/raw/ were modified",
+        "No tables were created (the fixture has none)",
+        "The skill resolved or accepted the explicit target_wiki path without falling back to a hard-coded `wikis/<slug>/` location"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Please ingest `fixture-with-table-2025.md` into the wiki at `<TARGET_WIKI>`. The file is already sitting in that wiki's `raw/`. target_wiki: `<TARGET_WIKI>`. edition: 2025.",
+      "expected_output": "A <TARGET_WIKI>/sources/fixture-with-table-2025.md is created. The benchmark table is extracted to <TARGET_WIKI>/data/tables/<slug>.csv with all four rows preserved and a meta.yaml sidecar. NO wiki page contains a prose retelling of the table contents.",
+      "files": ["evals/files/fixture-with-table-2025.md"],
+      "expectations": [
+        "<TARGET_WIKI>/sources/fixture-with-table-2025.md exists with type:source and edition:2025",
+        "<TARGET_WIKI>/data/tables/<some-slug>.csv exists with exactly 4 data rows + 1 header row",
+        "The CSV header row is `cache,median_us,p99_us,memory_mib`",
+        "<TARGET_WIKI>/data/tables/<some-slug>.meta.yaml exists, with source:src:fixture-with-table-2025 and source_location naming §results",
+        "NO wiki page contains the numeric values 1.2, 4.8, 1180, 2.0, 9.3, 4.4, 22.5 as prose",
+        "Every factual sentence on every created wiki page has a citation marker pointing at a real heading from the fixture (setup, results, interpretation)",
+        "<TARGET_WIKI>/log.md has an ingest entry indicating ≥1 table was extracted"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Please ingest `fixture-idempotent-2024.md` into the wiki at `<TARGET_WIKI>`. That wiki already has a pre-existing `sources/fixture-idempotent-2024.md` page at edition 2024 (we set it up before invoking you). target_wiki: `<TARGET_WIKI>`. edition: 2024.",
+      "expected_output": "The skill detects that <TARGET_WIKI>/sources/fixture-idempotent-2024.md already exists at edition 2024, the same edition as the new ingest. It stops with a warning. It writes a `note` line to log.md. It does NOT create new entity/concept pages, does NOT touch the existing source page.",
+      "files": ["evals/files/fixture-idempotent-2024.md", "evals/files/fixture-idempotent-pre-existing-source.md"],
+      "expectations": [
+        "<TARGET_WIKI>/sources/fixture-idempotent-2024.md is unchanged (updated field still 2025-01-01)",
+        "No new files were created under <TARGET_WIKI>/entities/, <TARGET_WIKI>/concepts/, or <TARGET_WIKI>/data/tables/",
+        "<TARGET_WIKI>/log.md has a new line of the form `## [<date>] note | wiki-ingest skipped fixture-idempotent-2024: <reason>`",
+        "The agent's user-facing message names the existing page path (using the resolved <TARGET_WIKI> path, not a hard-coded one) and gives the rename-with-new-edition recommendation"
+      ]
+    }
+  ]
+}

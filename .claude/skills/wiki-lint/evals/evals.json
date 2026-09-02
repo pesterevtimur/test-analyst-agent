@@ -1,0 +1,52 @@
+{
+  "skill_name": "wiki-lint",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Please run wiki-lint on the wiki at `<TARGET_WIKI>`. Severity: all. The wiki is a freshly-bootstrapped sandbox with one source ingested (the fixture-happy-path-2025 source from the wiki-ingest evals). I want the full report.",
+      "expected_output": "Report saved to <TARGET_WIKI>/_lint/report-<today>.md. Citation coverage 100% (no missing-citation). Broken-citation 0, stale-claim 0, table-as-prose 0. Warnings: 1 flat-index probably no (index is short), 0 unresolved-contradiction, some unindexed-page and orphan-page on the entities just ingested are plausible — what matters is that the report is structurally correct, with all eight section headings present.",
+      "files": [],
+      "expectations": [
+        "<TARGET_WIKI>/_lint/report-<YYYY-MM-DD>.md was created with today's date",
+        "The report has all eight category headings (missing-citation, broken-citation, stale-claim, table-as-prose, orphan-page, unresolved-contradiction, flat-index, unindexed-page); empty sections say `_None._`",
+        "The report's Summary block shows `critical: 0` (a freshly-ingested clean wiki should have zero critical findings)",
+        "The report has a `## Per-page summary` table",
+        "The report contains a `Citation coverage:` line",
+        "wiki-lint did NOT modify any wiki content (only wrote into _lint/ and possibly appended one log line)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Please run wiki-lint on the wiki at `<TARGET_WIKI>`. Severity: all. This wiki was set up with intentional defects across all eight lint categories — I want to see if the skill catches each. Full report.",
+      "expected_output": "Report saved to <TARGET_WIKI>/_lint/report-<today>.md. Counts: at least one finding in each of the eight categories. Citation coverage < 100%. The summary should match the per-page table.",
+      "files": ["evals/files/dirty-wiki-fixture/"],
+      "expectations": [
+        "<TARGET_WIKI>/_lint/report-<YYYY-MM-DD>.md was created",
+        "missing-citation count ≥ 1 (the latency-3ms sentence on entities/entity-missing-citation.md)",
+        "broken-citation count ≥ 2 (one for §nonexistent-section, one for the nonexistent source-id on entities/entity-broken-citation.md)",
+        "stale-claim count ≥ 1 (entities/entity-stale.md edition 2024 vs source edition 2025)",
+        "table-as-prose count ≥ 1 (the 5-number paragraph on entities/entity-table-as-prose.md)",
+        "orphan-page count ≥ 1 (entities/entity-orphan.md)",
+        "unresolved-contradiction count ≥ 1 (contradictions/unresolved-fixture.md)",
+        "flat-index count = 1 (index.md exceeds 100 lines without sub-sections)",
+        "unindexed-page count ≥ 2 (entity-orphan.md AND entity-unindexed.md are both absent from index.md)",
+        "Summary critical-count and warning-count match the per-category sums in the body",
+        "Per-page summary table is present and sums match Summary"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Please run wiki-lint on the real `wikis/context-engineering/` wiki at `<TARGET_WIKI>`. This is a real ingest from yesterday — one source (Karpathy LLM Wiki gist), 2 entities, 5 concepts. I want to see the actual state. Full report.",
+      "expected_output": "Honest report on the real wiki. Counts unknown ahead of time — the eval grades whether the report is structurally correct and whether the skill terminated cleanly, not specific finding counts.",
+      "files": [],
+      "expectations": [
+        "<TARGET_WIKI>/_lint/report-<YYYY-MM-DD>.md was created on the real wiki",
+        "Report has all eight category headings present",
+        "Report has a Citation coverage line with a real percentage (not N/A — the wiki has facts)",
+        "Report has a Per-page summary table covering ≥ 7 wiki pages (1 source + 2 entities + 5 concepts at minimum, may include the index/log if scanned)",
+        "wikis/context-engineering/raw/ was NOT scanned (immutable, excluded by Step 1)",
+        "wiki content (sources/, entities/, concepts/) was NOT modified — only _lint/ added and possibly one log.md line appended"
+      ]
+    }
+  ]
+}

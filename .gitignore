@@ -1,0 +1,46 @@
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+env.txt
+env*.txt
+*.session
+*.session-journal
+.secrets/
+**/credentials.json
+**/oauth_token.json
+**/oauth_client.json
+**/*_sa.json
+
+# Claude Code local config (machine-specific permissions, appears at runtime)
+.claude/settings.local.json
+
+# Skill workspaces (eval outputs, baseline runs)
+.claude/skills/*/_workspace/
+
+# Oracle data volume and container state
+infra/oracle-data/
+infra/**/data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Eval and report outputs
+evals/reports/*.json
+evals/reports/*.html
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor noise
+*.swp
+*.swo
+.vscode/
+.idea/

@@ -1,0 +1,50 @@
+{
+  "skill_name": "wiki-llm-builder",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'd like to start a new wiki domain on context engineering. Please bootstrap it. Summary: techniques for managing LLM context windows efficiently. English only.",
+      "expected_output": "Creates wikis/context-engineering/ with full skeleton: local CLAUDE.md, hierarchical index.md, log.md with init entry, empty entities/ concepts/ sources/ contradictions/ data/tables/, raw/ with README, _templates/ with entity-template.md. Reports the created tree to the user and points them at wiki-ingest as the next step. Does NOT ingest anything.",
+      "files": [],
+      "expectations": [
+        "Directory wikis/context-engineering/ is created",
+        "wikis/context-engineering/CLAUDE.md exists and restates the four laws (immutability, citation, tables-as-data, no manual edits)",
+        "wikis/context-engineering/CLAUDE.md substitutes all {{...}} placeholders — no raw {{...}} remains in the file",
+        "wikis/context-engineering/index.md exists and is hierarchical (one section per page type, not a flat list of pages)",
+        "wikis/context-engineering/log.md exists and contains an init entry with today's date",
+        "All five subdirectories exist: entities/, concepts/, sources/, contradictions/, data/tables/",
+        "wikis/context-engineering/raw/README.md exists and explicitly says raw files are immutable",
+        "wikis/context-engineering/_templates/entity-template.md exists with status: template in its YAML frontmatter",
+        "Agent reports the created tree (or at least the top-level paths) to the user",
+        "Agent does NOT attempt to ingest sources, parse content, or download anything",
+        "Agent explicitly directs the user to wiki-ingest as the next step"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "создай вики по теме 'Микросервисы 2.0' пожалуйста. Контент будет в основном на русском, но названия entities я хочу на английском.",
+      "expected_output": "Agent normalizes the domain name to a kebab-case Latin slug (e.g. microservices-2-0), confirms the slug with the user (because the original contains Cyrillic + space + special chars), then bootstraps the wiki. The local CLAUDE.md captures the bilingual convention (Russian prose, English entity titles).",
+      "files": [],
+      "expectations": [
+        "Agent normalizes the domain name to a valid kebab-case slug (lowercase, no spaces, no Cyrillic, no special punctuation)",
+        "Agent confirms the slug with the user before creating directories, OR at minimum shows the chosen slug in its response so the user can object",
+        "wikis/<chosen-slug>/ is created with the full standard skeleton",
+        "The local CLAUDE.md records the language convention (mentions Russian prose and/or English entity titles in its 'Language convention' or 'Local conventions' section)",
+        "Agent does NOT create the directory under a Cyrillic path like wikis/Микросервисы 2.0/"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Let's start a new wiki on prompt-injection defenses. Here are three papers I want included: https://example.com/paper-a.pdf, https://example.com/paper-b.pdf, https://example.com/paper-c.pdf. Get those in there.",
+      "expected_output": "Agent bootstraps wikis/prompt-injection-defenses/ with the standard skeleton. Records the three URLs as pending sources somewhere visible (log.md init entry or a sources/pending.md or a return message). Explicitly tells the user that downloading and ingesting the papers is the job of wiki-ingest, not this skill. Does NOT attempt to fetch the URLs.",
+      "files": [],
+      "expectations": [
+        "Directory wikis/prompt-injection-defenses/ is created with the standard skeleton",
+        "Agent does NOT attempt to fetch any of the three URLs (no WebFetch call, no curl, no download)",
+        "The three pending URLs are recorded somewhere — either in the log.md init entry, or in a pending note, or at minimum echoed back to the user",
+        "Agent explicitly defers source ingestion to the wiki-ingest skill (mentions wiki-ingest by name)",
+        "Agent does not claim it has ingested or read the papers"
+      ]
+    }
+  ]
+}
