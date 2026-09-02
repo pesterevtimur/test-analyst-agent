@@ -12,3 +12,4 @@
 | [002](002-agent-runtime.md) | Среда выполнения агента: OpenClaw | принято |
 | [003](003-mcp-transport.md) | Транспорт MCP: streamable-http | принято |
 | [004](004-model-provider.md) | Модель: DeepSeek вместо Anthropic | принято |
+| [008](008-observability.md) | Система трассировки: Langfuse, по замеру | принято |

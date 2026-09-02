@@ -1,0 +1,37 @@
+# Overrides on top of langfuse-upstream.yml.
+#
+# Two changes, both required by this project:
+#   1. Bind every published port to 127.0.0.1. Upstream publishes langfuse-web
+#      (3000) and minio (9090) on all interfaces; the brief forbids that.
+#   2. Put a memory ceiling on each service so the measurement is a measurement
+#      and not a guess, and so a runaway container cannot take the database with
+#      it. The ceilings are generous on purpose: the question is whether the
+#      stack fits at all, not how small it can be squeezed.
+#
+# Usage:
+#   docker compose -f langfuse-upstream.yml -f langfuse-override.yml up -d
+#
+# Note the !override tags: Compose merges list fields by appending, so without
+# them the upstream 0.0.0.0 bindings would survive alongside ours and collide.
+
+services:
+  langfuse-web:
+    ports: !override
+      - "127.0.0.1:3000:3000"
+    # Measured: at 1g the Node process dies with "JavaScript heap out of memory"
+    # during startup migrations. Node derives its old-space limit from the
+    # cgroup, so the container limit is also the heap limit.
+    mem_limit: 2g
+  langfuse-worker:
+    mem_limit: 1g
+  clickhouse:
+    mem_limit: 2g
+  minio:
+    ports: !override
+      - "127.0.0.1:9090:9000"
+      - "127.0.0.1:9091:9001"
+    mem_limit: 512m
+  redis:
+    mem_limit: 256m
+  postgres:
+    mem_limit: 512m
