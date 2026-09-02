@@ -229,3 +229,41 @@ def test_an_implicit_comma_join_is_refused(guards):
         "SELECT v.netwr FROM sh.zvbrp v, sh.zmara m WHERE v.mandt = '100'"
     )
     assert not verdict.ok, "FROM a, b without a condition is a cartesian product"
+
+
+# --- row limits in both Oracle spellings -------------------------------------
+
+def test_fetch_first_is_recognised_as_a_limit(guards):
+    """Oracle spells it FETCH FIRST n ROWS ONLY, and sqlglot parses it into a
+    different node than LIMIT. Reading only one shape threw the analyst's own
+    limit away and answered a different question."""
+    verdict = guards.check(
+        "SELECT v.netwr FROM sh.zvbrp v WHERE v.mandt = '100' FETCH FIRST 5 ROWS ONLY"
+    )
+    assert verdict.ok
+    assert verdict.row_limit == 5
+    assert verdict.limit_added is False
+    assert "5" in verdict.sql
+
+
+def test_an_oversized_fetch_first_is_capped(guards):
+    verdict = guards.check(
+        "SELECT v.netwr FROM sh.zvbrp v WHERE v.mandt = '100' FETCH FIRST 99999 ROWS ONLY"
+    )
+    assert verdict.ok
+    assert verdict.row_limit == 1000
+    assert verdict.limit_added is True
+
+
+def test_an_added_limit_is_rendered_in_oracle_syntax(guards):
+    verdict = guards.check("SELECT v.netwr FROM sh.zvbrp v WHERE v.mandt = '100'")
+    assert "FETCH FIRST 1000 ROWS ONLY" in verdict.sql.upper()
+
+
+def test_a_non_numeric_limit_falls_back_to_the_ceiling(guards):
+    """A limit that is not a plain number cannot be trusted to be small."""
+    verdict = guards.check(
+        "SELECT v.netwr FROM sh.zvbrp v WHERE v.mandt = '100' FETCH FIRST :n ROWS ONLY"
+    )
+    assert verdict.row_limit == 1000
+    assert verdict.limit_added is True

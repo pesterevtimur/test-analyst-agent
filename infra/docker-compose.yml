@@ -31,5 +31,34 @@ services:
       retries: 60
       start_period: 30s
 
+  mcp:
+    build:
+      context: ../mcp_server
+    container_name: sap-agent-mcp
+    restart: unless-stopped
+    depends_on:
+      oracle:
+        condition: service_healthy
+    environment:
+      ORACLE_APP_USER: ${ORACLE_APP_USER:-agent_ro}
+      ORACLE_APP_USER_PASSWORD: ${ORACLE_APP_USER_PASSWORD:?set ORACLE_APP_USER_PASSWORD in .env}
+      # Inside the compose network the database is reached by service name.
+      ORACLE_DSN: oracle:1521/FREEPDB1
+      SEMANTIC_SOURCES: semantic/sap
+      STATE_PATH: /state/sap-agent.db
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8080
+      # Until the gateway is confirmed to forward the analyst identity, every
+      # call without the header is attributed here. The open question and its
+      # fallback are in SPEC.md, section 11.
+      DEFAULT_ANALYST_ID: ${DEFAULT_ANALYST_ID:-analyst-unknown}
+    ports:
+      # 0.0.0.0 inside the container, 127.0.0.1 on the host: nothing is exposed.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - mcp-state:/state
+    mem_limit: 512m
+
 volumes:
   oracle-data:
+  mcp-state:

@@ -125,6 +125,27 @@ load_csv times times.csv
 load_csv supplementary_demographics supplementary_demographics.csv
 load_csv sales sales.csv
 
+# Without statistics the optimiser guesses, and it guesses badly: it estimated
+# one row for a query that returns fifteen, and picked nested loops over a
+# 918 843-row fact table, which then tripped the resource profile's IO ceiling.
+# Bad estimates also break the approval policy, which decides what may run
+# unattended from the estimated row count.
+echo "==> Gathering optimiser statistics"
+sqlplus -s -L "sh/${SH_PASSWORD}@localhost/${PDB}" <<'SQL'
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+SET FEEDBACK OFF
+BEGIN
+   DBMS_STATS.GATHER_SCHEMA_STATS(
+      ownname          => 'SH',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt       => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade          => TRUE,
+      degree           => 2);
+END;
+/
+EXIT
+SQL
+
 echo "==> Row counts"
 sqlplus -s -L "sh/${SH_PASSWORD}@localhost/${PDB}" <<'SQL'
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0

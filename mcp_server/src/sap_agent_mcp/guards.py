@@ -66,6 +66,30 @@ class Verdict(BaseModel):
         return [c for c in self.checks if c.failed]
 
 
+def _limit_value(node: exp.Expression | None) -> int | None:
+    """The row count from either LIMIT n or FETCH FIRST n ROWS ONLY."""
+    if node is None:
+        return None
+    if isinstance(node, exp.Fetch):
+        count = node.args.get("count")
+    else:
+        count = node.args.get("expression")
+    if isinstance(count, exp.Literal) and count.is_int:
+        return int(count.name)
+    # A limit that is not a plain number (a bind variable, an expression) is
+    # treated as absent, so the ceiling is applied rather than assumed.
+    return None
+
+
+def _make_limit(rows: int) -> exp.Fetch:
+    """Oracle spells a row limit FETCH FIRST n ROWS ONLY."""
+    return exp.Fetch(
+        direction="FIRST",
+        count=exp.Literal.number(rows),
+        limit_options=exp.LimitOptions(percent=False, rows=True, with_ties=False),
+    )
+
+
 def _passed(check_id: str, title: str, detail: str) -> Check:
     return Check(id=check_id, title=title, status=Status.PASSED, detail=detail)
 
@@ -281,40 +305,46 @@ class Guards:
         self, statement: exp.Expression
     ) -> tuple[Check, exp.Expression, int, bool]:
         title = "Ограничение числа строк"
-        limit = statement.args.get("limit")
-        if limit is not None:
-            expression = limit.expression
-            if isinstance(expression, exp.Literal) and expression.is_int:
-                value = int(expression.name)
-                if value > self.max_rows:
-                    statement.set("limit", exp.Limit(expression=exp.Literal.number(self.max_rows)))
-                    return (
-                        _passed(
-                            "row-limit",
-                            title,
-                            f"Запрошено {value} строк, срезано до предела {self.max_rows}.",
-                        ),
-                        statement,
-                        self.max_rows,
-                        True,
-                    )
-                return (
-                    _passed("row-limit", title, f"Ограничение задано: {value} строк."),
-                    statement,
-                    value,
-                    False,
-                )
 
-        statement.set("limit", exp.Limit(expression=exp.Literal.number(self.max_rows)))
+        # sqlglot stores both shapes under args["limit"]: an exp.Limit for
+        # LIMIT n and an exp.Fetch for Oracle's FETCH FIRST n ROWS ONLY. Reading
+        # only the first shape silently threw away the analyst's own limit, so a
+        # request for the top five came back with everything. Caught by the
+        # end-to-end run on 2026-09-02.
+        existing = statement.args.get("limit")
+        current = _limit_value(existing)
+
+        if current is None:
+            statement.set("limit", _make_limit(self.max_rows))
+            return (
+                _passed(
+                    "row-limit",
+                    title,
+                    f"Ограничение отсутствовало и добавлено: {self.max_rows} строк.",
+                ),
+                statement,
+                self.max_rows,
+                True,
+            )
+
+        if current > self.max_rows:
+            statement.set("limit", _make_limit(self.max_rows))
+            return (
+                _passed(
+                    "row-limit",
+                    title,
+                    f"Запрошено {current} строк, срезано до предела {self.max_rows}.",
+                ),
+                statement,
+                self.max_rows,
+                True,
+            )
+
         return (
-            _passed(
-                "row-limit",
-                title,
-                f"Ограничение отсутствовало и добавлено: {self.max_rows} строк.",
-            ),
+            _passed("row-limit", title, f"Ограничение задано в запросе: {current} строк."),
             statement,
-            self.max_rows,
-            True,
+            current,
+            False,
         )
 
     # -- check 5 --------------------------------------------------------------
