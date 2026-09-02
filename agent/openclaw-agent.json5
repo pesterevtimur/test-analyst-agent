@@ -1,0 +1,14 @@
+// Agent configuration for the data analyst.
+//
+// Apply with:
+//   openclaw config patch --file agent/openclaw-agent.json5
+{
+  // OpenClaw's memory plugin indexes transcripts through an embedding provider
+  // and defaults to OpenAI, which this project has no key for. It logged a
+  // failure on every turn and buys nothing here: the agent's memory of what
+  // matters lives in the semantic layer and in the journal, both of which are
+  // auditable, unlike an opaque embedding index.
+  plugins: {
+    slots: { memory: "none" },
+  },
+}

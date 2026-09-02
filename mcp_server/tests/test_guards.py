@@ -39,7 +39,7 @@ def failed_ids(verdict) -> set[str]:
 def test_a_correct_query_passes_every_check(guards):
     verdict = guards.check(GOOD)
     assert verdict.ok, [c.detail for c in verdict.failures]
-    assert len(verdict.checks) == 5
+    assert len(verdict.checks) == 6
     assert set(verdict.tables) == {"SH.ZVBRP", "SH.ZKNA1", "SH.ZT005T"}
 
 
@@ -202,6 +202,7 @@ def test_the_verdict_lists_every_check_not_just_the_first_failure(guards):
         "allowlist",
         "masking",
         "joins",
+        "default-filters",
         "row-limit",
     ]
 
@@ -267,3 +268,44 @@ def test_a_non_numeric_limit_falls_back_to_the_ceiling(guards):
     )
     assert verdict.row_limit == 1000
     assert verdict.limit_added is True
+
+
+# --- filters that are expected but not mandatory ------------------------------
+
+def test_a_missing_deletion_filter_warns_without_blocking(guards):
+    """The agent read this trap in the dictionary and wrote the query without it
+    anyway, which is why the check exists. It warns rather than refuses, because
+    a question about deleted records is legitimate."""
+    verdict = guards.check(
+        "SELECT COUNT(*) FROM sh.zkna1 k WHERE k.mandt = '100'"
+    )
+    assert verdict.ok, "a missing default filter must not block the query"
+    warned = {c.id for c in verdict.warnings}
+    assert "default-filters" in warned
+    detail = next(c.detail for c in verdict.warnings)
+    assert "LVORM" in detail
+    assert "подтвердите" in detail
+
+
+def test_the_deletion_filter_present_passes_quietly(guards):
+    verdict = guards.check(
+        "SELECT COUNT(*) FROM sh.zkna1 k WHERE k.mandt = '100' AND k.lvorm = ' '"
+    )
+    assert verdict.ok
+    assert not verdict.warnings
+
+
+def test_a_default_filter_written_in_the_join_also_counts(guards):
+    verdict = guards.check(
+        "SELECT SUM(v.netwr) FROM sh.zvbrp v "
+        "JOIN sh.zkna1 k ON k.kunnr = v.kunnr AND k.mandt = v.mandt AND k.lvorm = ' ' "
+        "WHERE v.mandt = '100'"
+    )
+    assert verdict.ok
+    assert not verdict.warnings
+
+
+def test_a_warning_is_reported_separately_from_a_failure(guards):
+    verdict = guards.check("SELECT COUNT(*) FROM sh.zkna1 k WHERE k.mandt = '100'")
+    assert verdict.failures == []
+    assert len(verdict.warnings) == 1

@@ -32,6 +32,11 @@ _ALLOWED_ROOTS = (exp.Select, exp.Union, exp.Except, exp.Intersect)
 
 class Status(StrEnum):
     PASSED = "passed"
+    # Does not block. Raised when a query is legal but probably not what was
+    # meant, and it forces the proposal to an analyst instead of running by
+    # itself. Added after watching the agent read a documented trap in the
+    # dictionary and write the query without it anyway.
+    WARNING = "warning"
     FAILED = "failed"
 
 
@@ -46,6 +51,10 @@ class Check(BaseModel):
     @property
     def failed(self) -> bool:
         return self.status is Status.FAILED
+
+    @property
+    def warned(self) -> bool:
+        return self.status is Status.WARNING
 
 
 class Verdict(BaseModel):
@@ -64,6 +73,10 @@ class Verdict(BaseModel):
     @property
     def failures(self) -> list[Check]:
         return [c for c in self.checks if c.failed]
+
+    @property
+    def warnings(self) -> list[Check]:
+        return [c for c in self.checks if c.warned]
 
 
 def _limit_value(node: exp.Expression | None) -> int | None:
@@ -96,6 +109,10 @@ def _passed(check_id: str, title: str, detail: str) -> Check:
 
 def _failed(check_id: str, title: str, detail: str) -> Check:
     return Check(id=check_id, title=title, status=Status.FAILED, detail=detail)
+
+
+def _warned(check_id: str, title: str, detail: str) -> Check:
+    return Check(id=check_id, title=title, status=Status.WARNING, detail=detail)
 
 
 def sqlglot_schema(model: SemanticModel) -> dict:
@@ -409,6 +426,55 @@ class Guards:
             "joins", title, f"Соединений {len(joins)}, связей {checked}, все из словаря."
         )
 
+    # -- check 6 --------------------------------------------------------------
+
+    def _check_default_filters(self, resolved: exp.Expression, tables: list[str]) -> Check:
+        """Filters that are right in almost every report, but not always.
+
+        Excluding rows flagged for deletion is the clearest case: forgetting it
+        inflates every count, and on this data the deleted customers outnumber
+        the live ones four to one. Making it mandatory would be wrong, because
+        "show me the deleted records" is a legitimate question. So a missing
+        default filter warns and sends the proposal to an analyst.
+        """
+        title = "Фильтры, ожидаемые по умолчанию"
+        written = " ".join(
+            column.sql(dialect=DIALECT).upper()
+            for column in resolved.find_all(exp.Column)
+        )
+        where = resolved.args.get("where")
+        clause = where.sql(dialect=DIALECT).upper() if where is not None else ""
+        joins = " ".join(
+            join.sql(dialect=DIALECT).upper() for join in resolved.find_all(exp.Join)
+        )
+        haystack = clause + " " + joins
+
+        missing: list[str] = []
+        for qualified in tables:
+            name = qualified.split(".")[-1]
+            table = self.model.tables.get(name)
+            if table is None:
+                continue
+            for column in table.columns:
+                if not column.default_filter:
+                    continue
+                if column.name.upper() not in haystack:
+                    missing.append(
+                        f"{name}.{column.name} {column.default_filter} ({column.title})"
+                    )
+
+        if missing:
+            return _warned(
+                "default-filters",
+                title,
+                "Не поставлены фильтры, которые нужны почти всегда: "
+                + "; ".join(missing)
+                + ". Если вопрос действительно про эти строки, подтвердите; "
+                "если нет, добавьте фильтр. Без подтверждения аналитика запрос "
+                "не выполняется.",
+            )
+        return _passed("default-filters", title, "Ожидаемые фильтры на месте.")
+
     # -- entry point ----------------------------------------------------------
 
     def check(self, sql: str) -> Verdict:
@@ -427,6 +493,7 @@ class Guards:
 
         checks.append(self._check_masking(columns))
         checks.append(self._check_joins(resolved))
+        checks.append(self._check_default_filters(resolved, tables))
 
         row_limit_check, limited, row_limit, added = self._check_row_limit(statement)
         checks.append(row_limit_check)

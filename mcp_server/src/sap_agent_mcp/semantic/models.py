@@ -75,6 +75,11 @@ class Column(Strict):
     # A filter that must be present in every query touching this table, given
     # as an SQL fragment relative to the column, e.g. "= '100'".
     required_filter: str | None = None
+    # A filter that is right in almost every report but not always: excluding
+    # rows flagged for deletion, for instance. A question about deleted records
+    # is legitimate, so a missing default filter is a warning the analyst sees
+    # on the approval card, not a refusal.
+    default_filter: str | None = None
 
     @model_validator(mode="after")
     def _pii_columns_are_not_keys(self) -> Column:

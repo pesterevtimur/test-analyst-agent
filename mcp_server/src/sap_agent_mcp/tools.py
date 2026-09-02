@@ -273,6 +273,14 @@ class Tools:
         because this is where the data is.
         """
         limits = self.limits
+        if verdict.warnings:
+            return (
+                ProposalStatus.PENDING,
+                "Есть предупреждения: "
+                + "; ".join(c.title for c in verdict.warnings)
+                + ". Запрос законен, но, возможно, отвечает не на тот вопрос, "
+                "поэтому решает аналитик.",
+            )
         if len(verdict.tables) > limits.auto_max_tables:
             return (
                 ProposalStatus.PENDING,
