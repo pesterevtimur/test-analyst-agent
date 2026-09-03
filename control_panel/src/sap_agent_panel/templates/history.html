@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set screen = 'history' %}
+{% block body %}
+<h1 style="font-size:18px">История</h1>
+<p class="muted">
+  Всё, что было предложено: выполненное, отклонённое, заменённое правкой и
+  заблокированное ограничителями. Ничего не прячется, разбор начинается отсюда.
+</p>
+<table>
+  <tr>
+    <th>Когда</th><th>Вопрос</th><th>Статус</th><th>Кто решил</th>
+    <th>Строк</th><th>Время</th><th></th>
+  </tr>
+  {% for proposal in proposals %}
+  <tr>
+    <td>{{ proposal.created_at.strftime('%m-%d %H:%M') }}</td>
+    <td>{{ proposal.question }}<div class="muted">{{ proposal.user_id }}</div></td>
+    <td>{{ {'pending':'ждёт','approved':'подтверждено','auto':'без подтверждения','rejected':'отклонено','executed':'выполнено','superseded':'заменено','blocked':'отклонено ограничителями'}.get(proposal.status, proposal.status) }}</td>
+    <td>{{ proposal.decided_by or '' }}<div class="muted">{{ proposal.decision_note or '' }}</div></td>
+    <td>{{ results[proposal.id].row_count if results[proposal.id] else '' }}</td>
+    <td>{{ (results[proposal.id].duration_ms ~ ' мс') if results[proposal.id] else '' }}</td>
+    <td><a href="/history/{{ proposal.id }}">Разобрать</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% if not proposals %}<p class="empty">Пока ничего не предлагалось.</p>{% endif %}
+{% endblock %}

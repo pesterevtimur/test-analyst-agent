@@ -130,6 +130,24 @@ class JournalEntry(Base):
     detail: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
 
+class Setting(Base):
+    """Policy switches an analyst can flip without a deploy.
+
+    Kept next to the queue rather than in the environment because the panel and
+    the server are different processes: an environment variable changed in one
+    of them is a lie in the other. Every change carries who and why, and the why
+    goes to the journal.
+    """
+
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(256))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_by: Mapped[str] = mapped_column(String(128), default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+
+
 class RateState(Base):
     __tablename__ = "rate_state"
 
@@ -507,6 +525,37 @@ class Store:
         self.record(
             user_id=user_id, tool="limits", outcome="granted",
             extra=extra, by=by, reason=reason,
+        )
+
+    # -- policy switches -------------------------------------------------------
+
+    def settings(self) -> dict[str, str]:
+        with self.session() as session:
+            return {row.key: row.value for row in session.scalars(select(Setting))}
+
+    def setting(self, key: str, default: str | None = None) -> str | None:
+        with self.session() as session:
+            row = session.get(Setting, key)
+            return row.value if row is not None else default
+
+    def set_setting(self, key: str, value: str, *, by: str, reason: str) -> None:
+        """Changing policy requires a reason, for the same purpose as raising a
+        limit: without one it becomes a quiet habit and the policy is decoration."""
+        if not reason.strip():
+            raise ValueError("изменение политики требует причины текстом")
+        with self.session() as session:
+            row = session.get(Setting, key)
+            if row is None:
+                row = Setting(key=key, value=value)
+                session.add(row)
+            row.value = value
+            row.updated_at = now()
+            row.updated_by = by
+            row.reason = reason
+            session.commit()
+        self.record(
+            user_id=by, tool="policy", outcome="changed",
+            key=key, value=value, reason=reason,
         )
 
     # -- concurrency -----------------------------------------------------------

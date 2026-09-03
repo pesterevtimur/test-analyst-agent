@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% set screen = 'queue' %}
+{% block body %}
+<h1 style="font-size:18px">Очередь подтверждений</h1>
+<div hx-get="/queue/rows" hx-trigger="every 10s" hx-swap="innerHTML">
+  {% include "_queue_rows.html" %}
+</div>
+{% endblock %}

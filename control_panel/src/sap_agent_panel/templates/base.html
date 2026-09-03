@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Панель аналитика{% endblock %}</title>
+  <script src="/static/htmx.min.js"></script>
+  <style>
+    :root { color-scheme: light dark; --line: #d6d6d6; --bad: #a4262c; --warn: #8a6d1f; --ok: #1f7a3d; }
+    body { margin: 0; font: 15px/1.5 system-ui, sans-serif; }
+    header { display: flex; gap: 20px; align-items: baseline; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+    header a { text-decoration: none; }
+    header a.active { font-weight: 600; text-decoration: underline; }
+    main { padding: 20px; max-width: 1100px; }
+    .card { border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+    .card h2 { margin: 0 0 4px; font-size: 16px; }
+    .muted { color: #6b6b6b; font-size: 13px; }
+    pre { background: rgba(127,127,127,.10); padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 13px; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .failed { color: var(--bad); } .warning { color: var(--warn); } .passed { color: var(--ok); }
+    form.inline { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-right: 12px; }
+    input[type=text], textarea, select { font: inherit; padding: 4px 6px; }
+    textarea { width: 100%; min-height: 120px; font-family: ui-monospace, monospace; }
+    button { font: inherit; padding: 5px 12px; cursor: pointer; }
+    .empty { color: #6b6b6b; padding: 30px 0; }
+  </style>
+</head>
+<body>
+<header>
+  <strong>Панель аналитика</strong>
+  <a href="/" class="{{ 'active' if screen == 'queue' }}">Очередь</a>
+  <a href="/history" class="{{ 'active' if screen == 'history' }}">История</a>
+  <a href="/limits" class="{{ 'active' if screen == 'limits' }}">Лимиты</a>
+  <a href="/evals" class="{{ 'active' if screen == 'evals' }}">Эталонный набор</a>
+  <form method="post" action="/logout" style="margin-left:auto"><button>Выйти</button></form>
+</header>
+<main>{% block body %}{% endblock %}</main>
+</body>
+</html>

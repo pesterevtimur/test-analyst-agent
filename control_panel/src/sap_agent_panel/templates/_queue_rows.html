@@ -1,0 +1,47 @@
+{% if not proposals %}
+  <p class="empty">Очередь пуста. Предложения появятся здесь сами.</p>
+{% endif %}
+{% for proposal in proposals %}
+<div class="card">
+  <h2>{{ proposal.question }}</h2>
+  <p class="muted">
+    {{ proposal.id }} · предложил {{ proposal.user_id }} ·
+    {{ proposal.created_at.strftime('%Y-%m-%d %H:%M') }} ·
+    данные на {{ proposal.data_as_of or 'неизвестно' }}
+  </p>
+  <p><strong>Почему ждёт вас:</strong> {{ proposal.policy_reason }}</p>
+  <pre>{{ proposal.sql }}</pre>
+  <p class="muted">
+    Таблиц {{ proposal.tables|length }} ·
+    оценка строк {{ proposal.estimated_rows if proposal.estimated_rows is not none else 'нет' }} ·
+    стоимость плана {{ proposal.estimated_cost if proposal.estimated_cost is not none else 'нет' }} ·
+    лимит {{ proposal.row_limit }}{{ ' (поставлен ограничителем)' if proposal.limit_imposed else ' (задан в запросе)' }}
+  </p>
+  {% include "_checks.html" %}
+  <details><summary class="muted">План выполнения</summary><pre>{{ proposal.plan|join('\n') }}</pre></details>
+
+  <form class="inline" method="post" action="/proposals/{{ proposal.id }}/approve">
+    <select name="by">{% for analyst in analysts %}<option>{{ analyst }}</option>{% endfor %}</select>
+    <input type="text" name="note" placeholder="Комментарий">
+    <button>Подтвердить</button>
+  </form>
+  <form class="inline" method="post" action="/proposals/{{ proposal.id }}/reject">
+    <select name="by">{% for analyst in analysts %}<option>{{ analyst }}</option>{% endfor %}</select>
+    <input type="text" name="note" placeholder="Причина отказа">
+    <button>Отклонить</button>
+  </form>
+  <details>
+    <summary>Поправить запрос</summary>
+    <form method="post" action="/proposals/{{ proposal.id }}/amend">
+      <textarea name="sql">{{ proposal.sql }}</textarea>
+      <select name="by">{% for analyst in analysts %}<option>{{ analyst }}</option>{% endfor %}</select>
+      <input type="text" name="note" placeholder="Что поправлено">
+      <button>Сохранить правку</button>
+      <p class="muted">
+        Правка создаёт новое предложение, старое остаётся с пометкой «заменено».
+        Проверки прогоняются заново: правленый запрос это другой запрос.
+      </p>
+    </form>
+  </details>
+</div>
+{% endfor %}

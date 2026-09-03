@@ -1,0 +1,10 @@
+<table>
+  <tr><th>Проверка</th><th>Статус</th><th>Что сказано</th></tr>
+  {% for check in proposal.checks %}
+  <tr>
+    <td>{{ check.title }}</td>
+    <td class="{{ check.status }}">{{ {'passed':'прошла','warning':'предупреждение','failed':'не прошла'}[check.status] }}</td>
+    <td>{{ check.detail }}</td>
+  </tr>
+  {% endfor %}
+</table>

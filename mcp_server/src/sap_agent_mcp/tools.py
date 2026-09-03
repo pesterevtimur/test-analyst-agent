@@ -273,6 +273,20 @@ class Tools:
         because this is where the data is.
         """
         limits = self.limits
+
+        # Policy is data, not deployment: the panel can tighten it mid-incident
+        # without a restart, and every change carries a reason in the journal.
+        if self.store.setting("auto_execute", "on") != "on":
+            return (
+                ProposalStatus.PENDING,
+                "Автовыполнение выключено в панели. Любое предложение ждёт "
+                "подтверждения аналитика.",
+            )
+        max_rows = int(self.store.setting("auto_max_rows", str(limits.auto_max_rows)))
+        max_tables = int(
+            self.store.setting("auto_max_tables", str(limits.auto_max_tables))
+        )
+
         if verdict.warnings:
             return (
                 ProposalStatus.PENDING,
@@ -281,11 +295,11 @@ class Tools:
                 + ". Запрос законен, но, возможно, отвечает не на тот вопрос, "
                 "поэтому решает аналитик.",
             )
-        if len(verdict.tables) > limits.auto_max_tables:
+        if len(verdict.tables) > max_tables:
             return (
                 ProposalStatus.PENDING,
                 f"Таблиц {len(verdict.tables)}, порог автовыполнения "
-                f"{limits.auto_max_tables}. Нужно подтверждение аналитика.",
+                f"{max_tables}. Нужно подтверждение аналитика.",
             )
         if estimated_rows is None:
             return (
@@ -293,11 +307,11 @@ class Tools:
                 "База не дала оценку числа строк. Без оценки объёма запрос не "
                 "выполняется автоматически.",
             )
-        if estimated_rows > limits.auto_max_rows:
+        if estimated_rows > max_rows:
             return (
                 ProposalStatus.PENDING,
                 f"Оценка {estimated_rows} строк, порог автовыполнения "
-                f"{limits.auto_max_rows}. Нужно подтверждение аналитика.",
+                f"{max_rows}. Нужно подтверждение аналитика.",
             )
         return (
             ProposalStatus.AUTO,

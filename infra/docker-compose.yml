@@ -60,6 +60,31 @@ services:
       - mcp-state:/state
     mem_limit: 512m
 
+  panel:
+    build:
+      context: ..
+      dockerfile: control_panel/Dockerfile
+    container_name: sap-agent-panel
+    restart: unless-stopped
+    depends_on:
+      - mcp
+    environment:
+      STATE_PATH: /state/sap-agent.db
+      PANEL_HOST: 0.0.0.0
+      PANEL_PORT: 8081
+      PANEL_PASSWORD: ${PANEL_PASSWORD:?set PANEL_PASSWORD in .env}
+      PANEL_ANALYSTS: ${PANEL_ANALYSTS:-lead-analyst,analyst-1,analyst-2}
+      # The reference set lives in git, not in the state store (ADR-011), so the
+      # panel reads it from the repository and writes nominations back there.
+      REPO_ROOT: /repo
+    ports:
+      # Loopback on the host, reached through an ssh tunnel like everything else.
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - mcp-state:/state
+      - ..:/repo
+    mem_limit: 256m
+
 volumes:
   oracle-data:
   mcp-state:

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% set screen = 'evals' %}
+{% block body %}
+<h1 style="font-size:18px">Эталонный набор</h1>
+
+<div class="card">
+  <h2>Последний прогон</h2>
+  {% if report %}
+  <p class="muted">{{ report.file }} · {{ report.get('started_at', '') }}</p>
+  <table>
+    <tr><th>Метрика</th><th>Значение</th></tr>
+    {% for key, value in report.get('metrics', {}).items() %}
+    <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="empty">Прогонов ещё не было. Отчёты появляются в evals/reports.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Вопросы</h2>
+  <p class="muted">
+    Запечатанные показаны идентификатором и классом: их содержание не открывается
+    до финального прогона, иначе подмножество перестаёт быть мерой подгонки.
+  </p>
+  <table>
+    <tr><th>Идентификатор</th><th>Подмножество</th><th>Класс</th><th>Вид</th><th>Вопрос</th></tr>
+    {% for question in questions %}
+    <tr>
+      <td>{{ question.id }}</td>
+      <td>{{ 'рабочий' if question.subset == 'open' else 'запечатанный' }}</td>
+      <td>{{ {'simple':'простой','medium':'средний','complex':'сложный'}[question.difficulty] }}</td>
+      <td>{{ 'отказ' if question.kind == 'trap' else 'ответ' }}</td>
+      <td>{{ '(запечатан)' if question.hidden else question.question }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Выдвинуть подтверждённую пару в набор</h2>
+  <p class="muted">
+    Выдвижение пишет черновик в evals/candidates. В набор вопрос попадает
+    коммитом человека: набор, который растёт сам тем, что агент уже умеет,
+    поднимает собственную оценку и ничего не измеряет.
+  </p>
+  <form class="inline" method="post" action="/evals/candidate">
+    <select name="proposal_id">
+      {% for proposal in candidates if proposal.status in ('executed', 'approved') %}
+      <option value="{{ proposal.id }}">{{ proposal.question[:70] }}</option>
+      {% endfor %}
+    </select>
+    <select name="by">{% for analyst in analysts %}<option>{{ analyst }}</option>{% endfor %}</select>
+    <button>Выдвинуть</button>
+  </form>
+</div>
+{% endblock %}

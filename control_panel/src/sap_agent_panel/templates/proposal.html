@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% set screen = 'history' %}
+{% block body %}
+<h1 style="font-size:18px">{{ proposal.question }}</h1>
+<p class="muted">
+  {{ proposal.id }} · {{ proposal.user_id }} ·
+  трасса {{ proposal.trace_id or 'нет' }} ·
+  данные на {{ proposal.data_as_of or 'неизвестно' }}
+  {% if proposal.supersedes %} · заменяет {{ proposal.supersedes }}{% endif %}
+</p>
+<div class="card">
+  <h2>Запрос</h2>
+  <pre>{{ proposal.sql }}</pre>
+  {% include "_checks.html" %}
+  <p class="muted">{{ proposal.policy_reason }}</p>
+</div>
+{% if result %}
+<div class="card">
+  <h2>Результат</h2>
+  <p class="muted">
+    строк {{ result.row_count }}{{ ', обрезан по лимиту' if result.truncated else '' }} ·
+    {{ result.duration_ms }} мс
+  </p>
+  <table>
+    <tr>{% for column in result.columns %}<th>{{ column }}</th>{% endfor %}</tr>
+    {% for row in result.rows[:50] %}
+    <tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+<div class="card">
+  <h2>Журнал</h2>
+  <table>
+    <tr><th>Когда</th><th>Кто</th><th>Инструмент</th><th>Исход</th><th>Подробности</th></tr>
+    {% for entry in journal %}
+    <tr>
+      <td>{{ entry.at.strftime('%m-%d %H:%M:%S') }}</td>
+      <td>{{ entry.user_id }}</td>
+      <td>{{ entry.tool }}</td>
+      <td>{{ entry.outcome }}</td>
+      <td class="muted">{{ entry.detail }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

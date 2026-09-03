@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set screen = 'limits' %}
+{% block body %}
+<h1 style="font-size:18px">Лимиты и политика</h1>
+
+<div class="card">
+  <h2>Автовыполнение</h2>
+  <p class="muted">
+    Простое предложение выполняется само, остальные ждут аналитика. Пороги здесь,
+    а не в переменных окружения: панель и сервер это разные процессы, и
+    переменная, изменённая в одном, была бы враньём в другом. Каждое изменение
+    требует причины и попадает в журнал.
+  </p>
+  {% for key, label in [('auto_execute','Автовыполнение (on или off)'), ('auto_max_rows','Порог строк'), ('auto_max_tables','Порог таблиц')] %}
+  <form class="inline" method="post" action="/limits/policy">
+    <input type="hidden" name="key" value="{{ key }}">
+    <label>{{ label }}</label>
+    <input type="text" name="value" value="{{ policy[key] }}" size="6">
+    <select name="by">{% for analyst in analysts %}<option>{{ analyst }}</option>{% endfor %}</select>
+    <input type="text" name="reason" placeholder="Причина" required>
+    <button>Изменить</button>
+  </form>
+  <br>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Квоты людей</h2>
+  <table>
+    <tr><th>Аналитик</th><th>Жетонов в ведре</th><th>За сегодня</th><th>Надбавка</th><th>Обновлено</th></tr>
+    {% for state in states %}
+    <tr>
+      <td>{{ state.user_id }}</td>
+      <td>{{ '%.1f'|format(state.tokens) }}</td>
+      <td>{{ state.day_count }}</td>
+      <td>{{ state.bonus }}</td>
+      <td class="muted">{{ state.updated_at.strftime('%m-%d %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if not states %}<p class="empty">Никто ещё не выполнял запросов.</p>{% endif %}
+
+  <form class="inline" method="post" action="/limits/grant" style="margin-top:12px">
+    <input type="text" name="user_id" placeholder="Аналитик" required>
+    <input type="text" name="extra" placeholder="+запросов" size="6" required>
+    <select name="by">{% for analyst in analysts %}<option>{{ analyst }}</option>{% endfor %}</select>
+    <input type="text" name="reason" placeholder="Причина, обязательно" required>
+    <button>Поднять суточный потолок</button>
+  </form>
+  <p class="muted">
+    Без причины поднятие лимита не проходит: иначе это тихая ежедневная привычка,
+    а лимиты становятся украшением.
+  </p>
+</div>
+{% endblock %}
