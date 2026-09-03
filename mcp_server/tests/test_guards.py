@@ -309,3 +309,62 @@ def test_a_warning_is_reported_separately_from_a_failure(guards):
     verdict = guards.check("SELECT COUNT(*) FROM sh.zkna1 k WHERE k.mandt = '100'")
     assert verdict.failures == []
     assert len(verdict.warnings) == 1
+
+
+# --- filters the dictionary declares mandatory --------------------------------
+
+def test_a_query_without_the_client_filter_is_refused(guards):
+    """INSTR-4. Moved out of the prompt into the guard rails on day 4: the client
+    field is checkable without a model, and an instruction the model can forget
+    is not a boundary. Reading another landscape's rows is not a question anybody
+    legitimately asks, so this fails instead of warning."""
+    verdict = guards.check("SELECT SUM(v.netwr) FROM sh.zvbrp v")
+    assert not verdict.ok
+    assert "default-filters" in failed_ids(verdict)
+    detail = next(c.detail for c in verdict.failures)
+    assert "MANDT" in detail
+    assert "чужого контура" in detail
+
+
+def test_the_client_filter_is_required_on_every_table_in_the_query(guards):
+    """One table filtered and the other not is the same hole, harder to see."""
+    verdict = guards.check(
+        "SELECT SUM(v.netwr) FROM sh.zvbrp v "
+        "JOIN sh.zmara m ON m.matnr = v.matnr "
+        "WHERE v.mandt = '100' AND m.lvorm = ' '"
+    )
+    assert not verdict.ok
+    assert "default-filters" in failed_ids(verdict)
+    assert "ZMARA.MANDT" in next(c.detail for c in verdict.failures)
+
+
+def test_the_client_filter_carried_by_a_join_counts(guards):
+    """A filter travels along an equality: m.mandt = v.mandt plus one literal
+    constrains both tables, and demanding the literal twice would be theatre."""
+    verdict = guards.check(
+        "SELECT SUM(v.netwr) FROM sh.zvbrp v "
+        "JOIN sh.zmara m ON m.matnr = v.matnr AND m.mandt = v.mandt "
+        "WHERE v.mandt = '100' AND m.lvorm = ' '"
+    )
+    assert verdict.ok, [c.detail for c in verdict.failures]
+
+
+def test_the_client_filter_is_checked_inside_subqueries_too(guards):
+    verdict = guards.check(
+        "SELECT COUNT(*) AS customers FROM ("
+        "  SELECT DISTINCT v.kunnr AS kunnr FROM sh.zvbrp v WHERE v.mandt = '100'"
+        "  MINUS"
+        "  SELECT DISTINCT v.kunnr AS kunnr FROM sh.zvbrp v WHERE v.fkdat > DATE '2022-01-01'"
+        ")"
+    )
+    assert not verdict.ok
+    assert "default-filters" in failed_ids(verdict)
+
+
+def test_a_missing_required_filter_outranks_a_missing_default_one(guards):
+    """Both wrong at once reports the blocking one: the agent must fix that first,
+    and a warning next to a refusal reads as advice about a query that never ran."""
+    verdict = guards.check("SELECT COUNT(*) FROM sh.zkna1 k")
+    assert not verdict.ok
+    assert "default-filters" in failed_ids(verdict)
+    assert verdict.warnings == []

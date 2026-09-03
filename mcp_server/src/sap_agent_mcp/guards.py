@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlglot import exp
 from sqlglot.errors import ParseError, OptimizeError
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.optimizer.scope import traverse_scope
 
 from .semantic.models import SemanticModel
 
@@ -429,51 +430,85 @@ class Guards:
     # -- check 6 --------------------------------------------------------------
 
     def _check_default_filters(self, resolved: exp.Expression, tables: list[str]) -> Check:
-        """Filters that are right in almost every report, but not always.
+        """Two kinds of filter the dictionary declares, with two different weights.
 
-        Excluding rows flagged for deletion is the clearest case: forgetting it
-        inflates every count, and on this data the deleted customers outnumber
-        the live ones four to one. Making it mandatory would be wrong, because
-        "show me the deleted records" is a legitimate question. So a missing
-        default filter warns and sends the proposal to an analyst.
+        Required, `required_filter`: the client field. A query without it reads
+        rows of another company's landscape. There is no legitimate question that
+        wants that, so a missing one fails outright rather than warning. This
+        moved out of the prompt and into here on day 4: an instruction the model
+        can forget is not a boundary, and this one is checkable without a model.
+
+        Expected, `default_filter`: excluding rows flagged for deletion is right
+        in almost every report and wrong in the one that asks for deleted rows.
+        Making it mandatory would forbid a legitimate question, so a missing one
+        warns and sends the proposal to an analyst instead of blocking it.
         """
-        title = "Фильтры, ожидаемые по умолчанию"
-        written = " ".join(
-            column.sql(dialect=DIALECT).upper()
-            for column in resolved.find_all(exp.Column)
-        )
-        where = resolved.args.get("where")
-        clause = where.sql(dialect=DIALECT).upper() if where is not None else ""
-        joins = " ".join(
-            join.sql(dialect=DIALECT).upper() for join in resolved.find_all(exp.Join)
-        )
-        haystack = clause + " " + joins
+        title = "Обязательные и ожидаемые фильтры"
+        required: list[str] = []
+        expected: list[str] = []
 
-        missing: list[str] = []
-        for qualified in tables:
-            name = qualified.split(".")[-1]
-            table = self.model.tables.get(name)
-            if table is None:
-                continue
-            for column in table.columns:
-                if not column.default_filter:
+        # Checked per table occurrence, not per table name, and scope by scope.
+        # Searching the whole query text for the word MANDT would call a query
+        # filtered once and joined to three unfiltered tables clean, and that is
+        # exactly the shape the mistake takes.
+        for scope in traverse_scope(resolved):
+            select = scope.expression
+            conditions = [select.args.get("where")]
+            conditions.extend(select.args.get("joins") or [])
+
+            constrained: set[tuple[str, str]] = set()
+            for node in conditions:
+                if node is None:
                     continue
-                if column.name.upper() not in haystack:
-                    missing.append(
-                        f"{name}.{column.name} {column.default_filter} ({column.title})"
+                for column in node.find_all(exp.Column):
+                    constrained.add(
+                        ((column.table or "").upper(), column.name.upper())
                     )
 
-        if missing:
+            for table in scope.tables:
+                name = table.name.upper()
+                alias = table.alias_or_name.upper()
+                described = self.model.tables.get(name)
+                if described is None:
+                    continue
+                for column in described.columns:
+                    rule = column.required_filter or column.default_filter
+                    if not rule:
+                        continue
+                    # A filter travels along an equality: m.mandt = v.mandt on
+                    # the join plus one literal constrains both sides, so the
+                    # column being named in a condition is what counts.
+                    if (alias, column.name.upper()) in constrained:
+                        continue
+                    entry = f"{name}.{column.name} {rule} ({column.title})"
+                    if column.required_filter:
+                        required.append(entry)
+                    else:
+                        expected.append(entry)
+
+        required = sorted(set(required))
+        expected = sorted(set(expected))
+
+        if required:
+            return _failed(
+                "default-filters",
+                title,
+                "Нет обязательных фильтров: "
+                + "; ".join(required)
+                + ". Без них в выборку попадают строки чужого контура. "
+                "Добавьте фильтр и предложите запрос заново.",
+            )
+        if expected:
             return _warned(
                 "default-filters",
                 title,
                 "Не поставлены фильтры, которые нужны почти всегда: "
-                + "; ".join(missing)
+                + "; ".join(expected)
                 + ". Если вопрос действительно про эти строки, подтвердите; "
                 "если нет, добавьте фильтр. Без подтверждения аналитика запрос "
                 "не выполняется.",
             )
-        return _passed("default-filters", title, "Ожидаемые фильтры на месте.")
+        return _passed("default-filters", title, "Обязательные и ожидаемые фильтры на месте.")
 
     # -- entry point ----------------------------------------------------------
 
