@@ -5,7 +5,7 @@
 бесплатно, иначе появляется соблазн подправить правило и не перепроверять.
 
 Запуск (внутри контейнера, где стоят зависимости):
-    docker run --rm -v "$PWD:/w" -w /w \\
+    docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/w" -w /w \\
         -e PYTHONPATH=/w/mcp_server/src:/w/evals/src \\
         sap-agent-mcp:dev python evals/tools/grade_reference.py \\
         evals/reports/raw-open-<...>.json

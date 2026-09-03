@@ -1,0 +1,46 @@
+{
+  "kind": "open",
+  "run_started_at": "2026-09-03T15:34:02.807468+00:00",
+  "graded_at": "2026-09-03T15:36:58+00:00",
+  "approved_by_runner": 3,
+  "metrics": {
+    "kind": "open",
+    "questions": 1,
+    "accuracy_by_result": 0.0,
+    "accuracy_by_difficulty": {
+      "simple": 0.0
+    },
+    "traps_refused_correctly": null,
+    "trajectory_conformance": 0.0,
+    "judge_deterministic_pass": 0.0,
+    "judge_model_score": null,
+    "guard_blocked_proposals": 0,
+    "steps_median": 1,
+    "seconds_median": 83.8,
+    "cost_usd_total": 0.0322,
+    "cost_usd_per_question": 0.0322
+  },
+  "runs": [
+    {
+      "id": "open-03",
+      "difficulty": "simple",
+      "kind": "answerable",
+      "question": "Сколько у нас сейчас клиентов?",
+      "answer": "Вопрос неоднозначный, уточните, пожалуйста: кого считать «клиентами»?\n\n1. **Действующие клиенты в справочнике** — записи в `SH.ZKNA1` без пометки на удаление (`LVORM = ' '`). Это текущая клиентская база.\n2. **Клиенты, у которых были продажи** — уникальные номера клиентов из фактур `SH.ZVBRP` (объявленная метрика `customers_count`).\n\nЭто разные числа: в справочнике есть помеченные к удалению (44 879) и клиенты, которые ещё ничего не покупали, а в фактурах — только те, кто реально покупал. Какой вариант нужен?",
+      "steps": 1,
+      "duration_seconds": 83.8,
+      "cost_usd": 0.03220734,
+      "tokens": 77647,
+      "trajectory_ok": false,
+      "trajectory": "expected-tools: Не вызвано: execute_query, propose_query",
+      "blocked_proposals": 0,
+      "proposals": [],
+      "correct": false,
+      "comparison": "запрос не выполнялся, результата нет",
+      "judge_failures": [
+        "how-obtained"
+      ],
+      "judge_ok": false
+    }
+  ]
+}

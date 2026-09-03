@@ -31,8 +31,9 @@ __pycache__/
 # Node
 node_modules/
 
-# Eval and report outputs
-evals/reports/*.json
+# Eval outputs. The raw dumps of a run are big and reproducible; the graded
+# report is the artefact SPEC section 8 asks to be committed, so it stays.
+evals/reports/raw-*.json
 evals/reports/*.html
 
 # OS noise
