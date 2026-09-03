@@ -34,7 +34,7 @@ jobs:
           pip install -e "control_panel[dev]"
 
       - name: Tests
-        run: pytest mcp_server/tests evals/tests control_panel/tests -q
+        run: pytest mcp_server/tests evals/tests control_panel/tests docs/tools -q
 
       - name: Skills match the Agent Skills specification
         run: python harness/tools/validate_skills.py
