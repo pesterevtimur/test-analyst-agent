@@ -283,6 +283,98 @@ class Store:
             session.expunge(proposal)
             return proposal
 
+    def amend(
+        self, proposal_id: str, *, sql: str, by: str, note: str = ""
+    ) -> tuple[Proposal, Proposal]:
+        """The analyst edits the SQL: a new proposal, the old one kept.
+
+        Editing in place would erase what was actually proposed, and the review
+        question is always "what did the agent write and what did the human
+        change". So the old row survives as superseded and the new one points
+        back at it. History of decisions beats a tidy list.
+
+        The new proposal is not approved by the act of editing: it goes through
+        the guard rails again, because an edited query is a different query.
+        """
+        with self.session() as session:
+            old = session.get(Proposal, proposal_id)
+            if old is None:
+                raise KeyError(f"proposal {proposal_id} does not exist")
+            if old.status != ProposalStatus.PENDING:
+                raise ValueError(
+                    f"proposal {proposal_id} is {old.status}, only a pending "
+                    "proposal can be edited"
+                )
+            fresh = Proposal(
+                id=new_id("prop"),
+                user_id=old.user_id,
+                trace_id=old.trace_id,
+                question=old.question,
+                sql=sql,
+                status=ProposalStatus.PENDING,
+                checks=[],
+                tables=[],
+                columns=[],
+                row_limit=old.row_limit,
+                data_as_of=old.data_as_of,
+                policy_reason="правка аналитика, проверки прогоняются заново",
+                supersedes=old.id,
+            )
+            old.status = ProposalStatus.SUPERSEDED
+            old.decided_at = now()
+            old.decided_by = by
+            old.decision_note = note or "заменено правкой"
+            session.add(fresh)
+            session.commit()
+            for row in (old, fresh):
+                session.refresh(row)
+                session.expunge(row)
+            return old, fresh
+
+    def history(self, limit: int = 100, *, user_id: str | None = None) -> list[Proposal]:
+        """Everything that happened, newest first. Nothing is hidden from it:
+        rejected and superseded proposals are the interesting ones on a review."""
+        with self.session() as session:
+            query = select(Proposal).order_by(Proposal.created_at.desc()).limit(limit)
+            if user_id:
+                query = query.where(Proposal.user_id == user_id)
+            rows = list(session.scalars(query))
+            for row in rows:
+                session.expunge(row)
+            return rows
+
+    def result_for(self, proposal_id: str) -> Result | None:
+        with self.session() as session:
+            result = session.scalars(
+                select(Result)
+                .where(Result.proposal_id == proposal_id)
+                .order_by(Result.created_at.desc())
+                .limit(1)
+            ).first()
+            if result is not None:
+                session.expunge(result)
+            return result
+
+    def journal(
+        self, limit: int = 200, *, proposal_id: str | None = None
+    ) -> list[JournalEntry]:
+        with self.session() as session:
+            query = select(JournalEntry).order_by(JournalEntry.at.desc()).limit(limit)
+            if proposal_id:
+                query = query.where(JournalEntry.proposal_id == proposal_id)
+            rows = list(session.scalars(query))
+            for row in rows:
+                session.expunge(row)
+            return rows
+
+    def rate_states(self) -> list[RateState]:
+        """Whose buckets are where, for the limits screen."""
+        with self.session() as session:
+            rows = list(session.scalars(select(RateState).order_by(RateState.user_id)))
+            for row in rows:
+                session.expunge(row)
+            return rows
+
     def claim_for_execution(self, proposal_id: str, *, user_id: str) -> Proposal:
         """Take a proposal for execution, exactly once.
 

@@ -234,3 +234,57 @@ def test_a_new_column_is_added_to_an_existing_state_database(tmp_path, caplog):
     Store(path)  # reopening must repair the schema
     columns = {c["name"] for c in sa.inspect(engine).get_columns("proposals")}
     assert "data_as_of" in columns
+
+
+# --- what the panel needs -----------------------------------------------------
+
+def test_editing_a_proposal_keeps_the_original(store):
+    """The review question is always what the agent wrote and what the human
+    changed, so the original survives rather than being overwritten."""
+    original = make_proposal(store)
+    old, fresh = store.amend(
+        original.id, sql="SELECT 1 FROM sh.zvbrp v WHERE v.mandt = '100'",
+        by="lead-analyst", note="добавил фильтр периода",
+    )
+    assert old.status == ProposalStatus.SUPERSEDED
+    assert old.decided_by == "lead-analyst"
+    assert fresh.status == ProposalStatus.PENDING
+    assert fresh.supersedes == original.id
+    assert fresh.id != original.id
+
+
+def test_an_edited_proposal_is_not_approved_by_the_edit(store):
+    """An edited query is a different query and goes through the checks again."""
+    original = make_proposal(store)
+    _, fresh = store.amend(original.id, sql="SELECT 2 FROM sh.zvbrp", by="lead-analyst")
+    assert fresh.status == ProposalStatus.PENDING
+    with pytest.raises(ValueError):
+        store.claim_for_execution(fresh.id, user_id=fresh.user_id)
+
+
+def test_a_decided_proposal_cannot_be_edited(store):
+    proposal = make_proposal(store)
+    store.decide(proposal.id, status=ProposalStatus.REJECTED, by="lead-analyst")
+    with pytest.raises(ValueError):
+        store.amend(proposal.id, sql="SELECT 3 FROM sh.zvbrp", by="lead-analyst")
+
+
+def test_history_shows_rejected_and_superseded_proposals(store):
+    kept = make_proposal(store)
+    store.decide(kept.id, status=ProposalStatus.REJECTED, by="lead-analyst")
+    ids = {p.id for p in store.history()}
+    assert kept.id in ids
+
+
+def test_the_journal_can_be_read_back_for_one_proposal(store):
+    store.record(user_id="lead-analyst", tool="propose_query", outcome="ok",
+                 proposal_id="prop_j1")
+    store.record(user_id="lead-analyst", tool="execute_query", outcome="finished",
+                 proposal_id="prop_j2")
+    entries = store.journal(proposal_id="prop_j1")
+    assert [e.tool for e in entries] == ["propose_query"]
+
+
+def test_rate_states_lists_who_has_a_bucket(store):
+    store.take_token("someone", refill_per_minute=1, bucket_size=5, daily_cap=100)
+    assert "someone" in {state.user_id for state in store.rate_states()}
