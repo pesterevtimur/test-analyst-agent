@@ -1,0 +1,42 @@
+# The fast set (ADR-006): contracts, guard rails, the semantic layer and the
+# reference set checking itself. No database, no model, no network calls.
+#
+# The reference run is deliberately not here. It needs Oracle and a paid model,
+# it is not deterministic, and a red build that nobody trusts teaches the team
+# to ignore the ones that matter. It runs locally and its report is committed
+# under evals/reports/.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "mcp_server[dev]"
+          pip install -e "evals[dev]"
+
+      - name: Tests
+        run: pytest mcp_server/tests evals/tests -q
+
+      - name: Skills match the Agent Skills specification
+        run: python harness/tools/validate_skills.py
+
+      - name: Frozen gold answers belong to the current gold SQL
+        run: python evals/tools/freeze_gold.py --check
