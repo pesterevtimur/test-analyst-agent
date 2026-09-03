@@ -1,0 +1,16 @@
+{
+  "question_id": "open-08",
+  "sql_fingerprint": "b746a80834e9d3ef",
+  "columns": [
+    "PROMO_SHARE"
+  ],
+  "rows": [
+    [
+      0.0037503387335741972
+    ]
+  ],
+  "row_count": 1,
+  "frozen_at": "2026-09-03T08:20:52+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 101
+}

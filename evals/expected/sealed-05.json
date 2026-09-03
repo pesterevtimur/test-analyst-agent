@@ -1,0 +1,26 @@
+{
+  "question_id": "sealed-05",
+  "sql_fingerprint": "b4b88f50ae3ff3c6",
+  "columns": [
+    "CHANNEL",
+    "REVENUE_PER_CUSTOMER"
+  ],
+  "rows": [
+    [
+      "Direct Sales",
+      4208.876252750707
+    ],
+    [
+      "Partners",
+      2680.403454484828
+    ],
+    [
+      "Internet",
+      2460.3948148148147
+    ]
+  ],
+  "row_count": 3,
+  "frozen_at": "2026-09-03T08:20:55+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 228
+}

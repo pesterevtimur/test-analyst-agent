@@ -1,0 +1,18 @@
+{
+  "question_id": "sealed-04",
+  "sql_fingerprint": "e9fc2954afb02c42",
+  "columns": [
+    "PROMO_TYPE",
+    "REVENUE"
+  ],
+  "rows": [
+    [
+      "inte",
+      89128.7
+    ]
+  ],
+  "row_count": 1,
+  "frozen_at": "2026-09-03T08:20:55+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 88
+}

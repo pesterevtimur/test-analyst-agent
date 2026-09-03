@@ -1,0 +1,46 @@
+{
+  "question_id": "open-12",
+  "sql_fingerprint": "ba9d3dd716cf4496",
+  "columns": [
+    "COUNTRY",
+    "REVENUE"
+  ],
+  "rows": [
+    [
+      "Germany",
+      2275388.56
+    ],
+    [
+      "United Kingdom",
+      1552223.06
+    ],
+    [
+      "Italy",
+      1082405.86
+    ],
+    [
+      "France",
+      886244.61
+    ],
+    [
+      "Spain",
+      502859.74
+    ],
+    [
+      "Denmark",
+      436663.52
+    ],
+    [
+      "Poland",
+      1674.66
+    ],
+    [
+      "Turkey",
+      40.97
+    ]
+  ],
+  "row_count": 8,
+  "frozen_at": "2026-09-03T08:20:53+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 81
+}

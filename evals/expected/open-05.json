@@ -1,0 +1,16 @@
+{
+  "question_id": "open-05",
+  "sql_fingerprint": "ef9d9447e7abdfae",
+  "columns": [
+    "REVENUE"
+  ],
+  "rows": [
+    [
+      5371730.92
+    ]
+  ],
+  "row_count": 1,
+  "frozen_at": "2026-09-03T08:20:52+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 24
+}

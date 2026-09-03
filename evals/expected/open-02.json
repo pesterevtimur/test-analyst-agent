@@ -1,0 +1,26 @@
+{
+  "question_id": "open-02",
+  "sql_fingerprint": "0286f2b3146346ae",
+  "columns": [
+    "CHANNEL",
+    "REVENUE"
+  ],
+  "rows": [
+    [
+      "Direct Sales",
+      13388435.36
+    ],
+    [
+      "Partners",
+      8038529.96
+    ],
+    [
+      "Internet",
+      6709496.66
+    ]
+  ],
+  "row_count": 3,
+  "frozen_at": "2026-09-03T08:20:51+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 188
+}

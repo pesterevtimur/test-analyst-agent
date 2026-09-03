@@ -1,0 +1,54 @@
+{
+  "question_id": "open-04",
+  "sql_fingerprint": "170910fc0224ff5e",
+  "columns": [
+    "PRODUCT",
+    "REVENUE"
+  ],
+  "rows": [
+    [
+      "Lithium Electric Golf Caddy",
+      3453656.62
+    ],
+    [
+      "Soccer Goal - Official",
+      2819074.98
+    ],
+    [
+      "Right-Handed Graphite Shaft Iron Set",
+      2230713.39
+    ],
+    [
+      "Soccer Goal - Portable",
+      2205836.66
+    ],
+    [
+      "Pitching Machine and Batting Cage Combo",
+      1874621.96
+    ],
+    [
+      "Match Used Autograph Racquet",
+      1675991.85
+    ],
+    [
+      "Speed Trainer Bats and Training Program",
+      1316903.97
+    ],
+    [
+      "Sonic Core Graphite Racquet",
+      1205027.35
+    ],
+    [
+      "Limited Edition Racquet",
+      1103406.72
+    ],
+    [
+      "English Willow Cricket Bat",
+      1020370.87
+    ]
+  ],
+  "row_count": 10,
+  "frozen_at": "2026-09-03T08:20:52+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 192
+}

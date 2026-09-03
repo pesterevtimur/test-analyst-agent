@@ -1,0 +1,25 @@
+{
+  "question_id": "open-09",
+  "sql_fingerprint": "c682abf10042196a",
+  "columns": [
+    "PROMO_ID",
+    "PROMO",
+    "REVENUE"
+  ],
+  "rows": [
+    [
+      "0000000351",
+      "TV promotion #13-351",
+      1224503.26
+    ],
+    [
+      "0000000350",
+      "internet promotion #29-350",
+      137719.57
+    ]
+  ],
+  "row_count": 2,
+  "frozen_at": "2026-09-03T08:20:52+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 132
+}

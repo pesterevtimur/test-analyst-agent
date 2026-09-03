@@ -1,0 +1,20 @@
+{
+  "question_id": "open-10",
+  "sql_fingerprint": "f8187d64a3411d4b",
+  "columns": [
+    "PRODUCT",
+    "REVENUE",
+    "QUANTITY"
+  ],
+  "rows": [
+    [
+      "Soccer Goal - Portable",
+      2205836.66,
+      2197
+    ]
+  ],
+  "row_count": 1,
+  "frozen_at": "2026-09-03T08:20:52+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 394
+}

@@ -1,0 +1,30 @@
+{
+  "question_id": "open-13",
+  "sql_fingerprint": "ad1483bf103a4ea8",
+  "columns": [
+    "CHANNEL",
+    "REVENUE",
+    "MARGIN"
+  ],
+  "rows": [
+    [
+      "Direct Sales",
+      13388435.36,
+      2918601.47
+    ],
+    [
+      "Partners",
+      8038529.96,
+      1815524.55
+    ],
+    [
+      "Internet",
+      6709496.66,
+      1300218.22
+    ]
+  ],
+  "row_count": 3,
+  "frozen_at": "2026-09-03T08:20:53+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 475
+}

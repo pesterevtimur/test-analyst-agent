@@ -1,0 +1,105 @@
+{
+  "question_id": "open-11",
+  "sql_fingerprint": "81a661fe55e29ab6",
+  "columns": [
+    "MATERIAL_GROUP",
+    "UNIT",
+    "QUANTITY"
+  ],
+  "rows": [
+    [
+      "Cricket",
+      "U",
+      35058
+    ],
+    [
+      "Cricket C",
+      "U",
+      25432
+    ],
+    [
+      "Cricket B",
+      "U",
+      24871
+    ],
+    [
+      "Soccer Eq",
+      "U",
+      23731
+    ],
+    [
+      "Tennis Ba",
+      "U",
+      17479
+    ],
+    [
+      "Cricket F",
+      "U",
+      17214
+    ],
+    [
+      "Baseballs",
+      "U",
+      16550
+    ],
+    [
+      "Tennis Ra",
+      "U",
+      16492
+    ],
+    [
+      "Baseball ",
+      "U",
+      16163
+    ],
+    [
+      "Gloves an",
+      "U",
+      14765
+    ],
+    [
+      "Tennis St",
+      "U",
+      12177
+    ],
+    [
+      "Bats",
+      "U",
+      11713
+    ],
+    [
+      "Batting T",
+      "U",
+      9159
+    ],
+    [
+      "Soccer Cl",
+      "U",
+      6669
+    ],
+    [
+      "Soccer / ",
+      "U",
+      4387
+    ],
+    [
+      "Training ",
+      "U",
+      2812
+    ],
+    [
+      "Irons and",
+      "U",
+      2388
+    ],
+    [
+      "Golf Bags",
+      "U",
+      2358
+    ]
+  ],
+  "row_count": 18,
+  "frozen_at": "2026-09-03T08:20:53+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 213
+}

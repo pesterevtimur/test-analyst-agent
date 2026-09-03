@@ -1,0 +1,16 @@
+{
+  "question_id": "sealed-01",
+  "sql_fingerprint": "2a068ded9e760d62",
+  "columns": [
+    "PRODUCTS"
+  ],
+  "rows": [
+    [
+      72
+    ]
+  ],
+  "row_count": 1,
+  "frozen_at": "2026-09-03T08:20:54+00:00",
+  "data_as_of": "2026-09-02T15:45:19.330500",
+  "duration_ms": 6
+}
