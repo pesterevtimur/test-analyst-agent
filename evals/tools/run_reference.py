@@ -167,6 +167,12 @@ def main() -> int:
     REPORTS.mkdir(parents=True, exist_ok=True)
     path = REPORTS / f"raw-{kind}-{started_at:%Y%m%d-%H%M%S}.json"
 
+    # Сессия своя на каждый прогон, а не на вопрос. Иначе второй прогон
+    # отвечает по памяти первого: 3 сентября так и вышло, агент выдал верные
+    # числа, не вызвав ни одного инструмента, и прогон измерил не работу, а
+    # память. Ответ был правильный, метрика бессмысленная.
+    stamp = f"{started_at:%m%d-%H%M%S}"
+
     approver = Approver()
     approver.start()
     print(f"прогон {kind}: вопросов {len(items)}, отчёт в {path.name}\n")
@@ -176,7 +182,7 @@ def main() -> int:
         window = datetime.now(UTC)
         print(f"[{number}/{len(items)}] {item['id']}: {item['question'][:60]}")
         try:
-            outcome = ask(item["question"], f"eval-{item['id']}", args.timeout)
+            outcome = ask(item["question"], f"eval-{stamp}-{item['id']}", args.timeout)
         except subprocess.TimeoutExpired:
             outcome = {"answer": "", "meta": {}, "duration_seconds": args.timeout,
                        "returncode": -1, "stderr_tail": "таймаут"}
@@ -200,7 +206,7 @@ def main() -> int:
             followup = ask(
                 f"Аналитик подтвердил предложение {ids} в панели. "
                 "Выполни его и дай ответ на исходный вопрос.",
-                f"eval-{item['id']}", args.timeout,
+                f"eval-{stamp}-{item['id']}", args.timeout,
             )
             time.sleep(2.5)
             state = bridge("since", "--at", window.isoformat())
