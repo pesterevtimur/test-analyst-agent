@@ -76,12 +76,45 @@ def test_extra_row_is_an_error() -> None:
     assert "лишние строки" in result.summary
 
 
-def test_missing_measure_column_is_an_error() -> None:
-    gold = table([["Italy", 100.0]])
+def test_a_measure_under_another_name_is_matched_by_its_values() -> None:
+    """Nobody told the agent which alias to use, so the alias is not the answer.
+
+    This rule came out of the first reference run: a correct number scored zero
+    because the column was called TOTAL instead of REVENUE.
+    """
+    gold = table([["Italy", 100.0], ["Japan", 50.0]])
+    got = Table.of(["COUNTRY", "TOTAL"], [["Italy", 100.0], ["Japan", 50.0]])
+    result = compare(gold, got, BY_COUNTRY)
+    assert result.ok, result.summary
+    assert any("сопоставлена" in note for note in result.notes)
+
+
+def test_a_key_under_another_name_is_matched_by_its_values() -> None:
+    gold = table([["Italy", 100.0], ["Japan", 50.0]])
+    got = Table.of(["СТРАНА", "REVENUE"], [["Japan", 50.0], ["Italy", 100.0]])
+    assert compare(gold, got, BY_COUNTRY).ok
+
+
+def test_a_measure_that_is_nowhere_in_the_answer_is_still_an_error() -> None:
+    """Renaming is forgiven, absence is not: no column carries these numbers."""
+    gold = table([["Italy", 100.0], ["Japan", 50.0]])
+    got = Table.of(["COUNTRY", "TOTAL"], [["Italy", 7.0], ["Japan", 8.0]])
+    result = compare(gold, got, BY_COUNTRY)
+    assert not result.ok
+    assert result.missing_columns == ["REVENUE"] or result.mismatches
+
+
+def test_matching_by_values_does_not_forgive_a_wrong_number() -> None:
+    gold = table([["Italy", 100.0], ["Japan", 50.0]])
+    got = Table.of(["COUNTRY", "TOTAL"], [["Italy", 100.0], ["Japan", 80.0]])
+    assert not compare(gold, got, BY_COUNTRY).ok
+
+
+def test_matching_by_values_does_not_forgive_a_missing_row() -> None:
+    gold = table([["Italy", 100.0], ["Japan", 50.0]])
     got = Table.of(["COUNTRY", "TOTAL"], [["Italy", 100.0]])
     result = compare(gold, got, BY_COUNTRY)
     assert not result.ok
-    assert result.missing_columns == ["REVENUE"]
 
 
 def test_duplicated_key_is_an_error() -> None:
