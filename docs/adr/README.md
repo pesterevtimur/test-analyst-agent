@@ -12,6 +12,10 @@
 | [002](002-agent-runtime.md) | Среда выполнения агента: OpenClaw | принято |
 | [003](003-mcp-transport.md) | Транспорт MCP: streamable-http | принято |
 | [004](004-model-provider.md) | Модель: DeepSeek вместо Anthropic | принято |
+| [005](005-state-store.md) | Хранилище состояния: SQLite через SQLAlchemy | принято |
+| [006](006-two-test-sets.md) | Два набора проверок с разной ролью | принято |
+| [007](007-extra-rows-are-an-error.md) | Лишняя строка в ответе это ошибка | принято |
 | [008](008-observability.md) | Система трассировки: Langfuse, по замеру | принято |
 | [009](009-reporting-replica.md) | Аналитика работает на отчётной реплике | принято |
 | [010](010-sap-integration.md) | Подключение к настоящему SAP: SQL по реплике, семантика из словаря и CDS | принято |
+| [011](011-reference-set-lives-in-git.md) | Эталонный набор живёт в git, а не в хранилище состояния | принято |
