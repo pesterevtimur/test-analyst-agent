@@ -53,12 +53,23 @@ services:
       # call without the header is attributed here. The open question and its
       # fallback are in SPEC.md, section 11.
       DEFAULT_ANALYST_ID: ${DEFAULT_ANALYST_ID:-analyst-unknown}
+      # Tracing. Without these three the tracer is a no-op and the server runs
+      # exactly the same way, which is the point: observability must not be able
+      # to stop the thing it observes.
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse-web:3000}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_INIT_PROJECT_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_INIT_PROJECT_SECRET_KEY:-}
     ports:
       # 0.0.0.0 inside the container, 127.0.0.1 on the host: nothing is exposed.
       - "127.0.0.1:8080:8080"
     volumes:
       - mcp-state:/state
     mem_limit: 512m
+    networks:
+      - default
+      # Langfuse runs as its own compose project; the server reaches it by
+      # service name instead of through a port published on the host.
+      - observability
 
   panel:
     build:
@@ -84,6 +95,11 @@ services:
       - mcp-state:/state
       - ..:/repo
     mem_limit: 256m
+
+networks:
+  observability:
+    external: true
+    name: observability_default
 
 volumes:
   oracle-data:

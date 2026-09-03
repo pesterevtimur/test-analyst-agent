@@ -10,6 +10,10 @@ dependencies = [
     "pyyaml>=6.0",
     "sqlglot>=25.0",
     "sqlalchemy>=2.0",
+    # Traces go to Langfuse over OTLP/HTTP; the legacy ingestion API is
+    # deprecated. Optional at runtime: without keys the tracer is a no-op.
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-exporter-otlp-proto-http>=1.27",
 ]
 
 [project.optional-dependencies]

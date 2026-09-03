@@ -25,6 +25,7 @@ from .guards import Guards
 from .semantic import SemanticError, load
 from .store import Store
 from .tools import Tools
+from .tracing import build as build_tracing
 
 logger = logging.getLogger("sap_agent_mcp")
 
@@ -82,7 +83,7 @@ def build_server(settings: Settings) -> MCPServer:
     )
     tools = Tools(
         model=model, guards=guards, store=store, database=database,
-        limits=settings.limits,
+        limits=settings.limits, tracing=build_tracing(),
     )
 
     server = MCPServer(

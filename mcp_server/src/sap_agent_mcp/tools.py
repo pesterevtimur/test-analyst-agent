@@ -22,6 +22,7 @@ from .guards import Guards, Verdict
 from .sanity import SanityReport, check as sanity_check_rows
 from .semantic.models import SemanticModel
 from .store import Proposal, ProposalStatus, Result, Store, new_id
+from .tracing import Tracing
 
 
 class ToolError(BaseModel):
@@ -81,16 +82,20 @@ class Tools:
         store: Store,
         database: Database,
         limits: Limits,
+        tracing: Tracing | None = None,
     ) -> None:
         self.model = model
         self.guards = guards
         self.store = store
         self.db = database
         self.limits = limits
+        # Off by default: without keys this is a no-op, so tests and CI take the
+        # same path as production rather than a second one.
+        self.tracing = tracing or Tracing(None)
 
     # -- 1. describe_schema ----------------------------------------------------
 
-    def describe_schema(self, table: str | None = None, *, user_id: str) -> dict[str, Any]:
+    def _describe_schema(self, table: str | None, user_id: str) -> dict[str, Any]:
         """Serve the semantic layer.
 
         With eight tables the whole thing fits in context, so there is no search
@@ -196,8 +201,8 @@ class Tools:
 
     # -- 2. propose_query ------------------------------------------------------
 
-    def propose_query(
-        self, question: str, sql: str, *, user_id: str, trace_id: str | None = None
+    def _propose_query(
+        self, question: str, sql: str, user_id: str, trace_id: str | None
     ) -> dict[str, Any]:
         started = time.monotonic()
         verdict: Verdict = self.guards.check(sql)
@@ -321,8 +326,8 @@ class Tools:
 
     # -- 3. execute_query ------------------------------------------------------
 
-    def execute_query(
-        self, proposal_id: str, *, user_id: str, trace_id: str | None = None
+    def _execute_query(
+        self, proposal_id: str, user_id: str, trace_id: str | None
     ) -> dict[str, Any]:
         limits = self.limits
 
@@ -438,7 +443,7 @@ class Tools:
 
     # -- 4. sanity_check -------------------------------------------------------
 
-    def sanity_check(self, result_id: str, *, user_id: str) -> dict[str, Any]:
+    def _sanity_check(self, result_id: str, user_id: str) -> dict[str, Any]:
         result = self.store.get_result(result_id)
         if result is None:
             return ToolError(error=f"Результата {result_id} не существует.").model_dump()
@@ -461,6 +466,59 @@ class Tools:
         )
         return {"ok": True, "result_id": result_id, **report.model_dump(),
                 "worst": report.worst}
+
+
+    # -- the traced surface ----------------------------------------------------
+    #
+    # One span per tool call, carrying the analyst, the thread of the question
+    # and the masked input and output. The implementations above stay free of
+    # tracing so they can be read and tested without it.
+
+    def describe_schema(self, table: str | None = None, *, user_id: str) -> dict[str, Any]:
+        with self.tracing.tool(
+            "describe_schema", user_id=user_id, input={"table": table}
+        ) as span:
+            payload = self._describe_schema(table, user_id)
+            span.output({"tables": len(payload.get("tables", [])),
+                         "metrics": len(payload.get("metrics", [])),
+                         "data_as_of": payload.get("data_as_of")})
+            return payload
+
+    def propose_query(
+        self, question: str, sql: str, *, user_id: str, trace_id: str | None = None
+    ) -> dict[str, Any]:
+        with self.tracing.tool(
+            "propose_query", user_id=user_id, trace_id=trace_id,
+            input={"question": question, "sql": sql},
+        ) as span:
+            payload = self._propose_query(question, sql, user_id, trace_id)
+            span.output(payload)
+            span.set("sap.proposal.id", payload.get("proposal_id"))
+            span.set("sap.proposal.status", payload.get("status"))
+            return payload
+
+    def execute_query(
+        self, proposal_id: str, *, user_id: str, trace_id: str | None = None
+    ) -> dict[str, Any]:
+        with self.tracing.tool(
+            "execute_query", user_id=user_id, trace_id=trace_id,
+            input={"proposal_id": proposal_id},
+        ) as span:
+            payload = self._execute_query(proposal_id, user_id, trace_id)
+            # Rows are masked and cut to the first few by the tracer: a trace is
+            # for understanding the run, and the answer lives in the result.
+            span.output(payload)
+            span.set("sap.rows", payload.get("row_count"))
+            span.set("sap.duration_ms", payload.get("duration_ms"))
+            return payload
+
+    def sanity_check(self, result_id: str, *, user_id: str) -> dict[str, Any]:
+        with self.tracing.tool(
+            "sanity_check", user_id=user_id, input={"result_id": result_id}
+        ) as span:
+            payload = self._sanity_check(result_id, user_id)
+            span.output(payload)
+            return payload
 
 
 def _jsonable(value: Any) -> Any:
