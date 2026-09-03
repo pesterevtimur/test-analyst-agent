@@ -187,6 +187,25 @@ def main() -> int:
             outcome = {"answer": "", "meta": {}, "duration_seconds": args.timeout,
                        "returncode": -1, "stderr_tail": "таймаут"}
 
+        # Провайдер отвалился по деньгам или по правам: дальше прогон пишет
+        # пустые ответы и тратит время, а метрики выглядят как провал агента.
+        # 3 сентября так и вышло: девять вопросов подряд «не выполнено», и
+        # причина нашлась только в тексте одного ответа.
+        broken = ("billing error" in outcome["answer"]
+                  or "insufficient balance" in outcome["answer"].lower()
+                  or "temporarily disabled" in outcome["stderr_tail"]
+                  or (outcome["returncode"] != 0 and not outcome["answer"]))
+        if broken:
+            print("\n  ПРОГОН ОСТАНОВЛЕН: провайдер модели недоступен.")
+            print("  " + (outcome["stderr_tail"] or outcome["answer"])[:300])
+            runs.append({
+                "question_id": item["id"], "question": item["question"],
+                "max_steps": item["max_steps"], "started_at": window.isoformat(),
+                "aborted": True, **outcome,
+                "journal": [], "proposals": [], "results": [],
+            })
+            break
+
         # Пауза, чтобы журнал успел записаться до чтения.
         time.sleep(2.5)
         state = bridge("since", "--at", window.isoformat())
