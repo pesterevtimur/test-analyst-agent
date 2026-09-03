@@ -6,6 +6,7 @@ kind: trap
 trap_type: no-data
 gotchas: [data-range]
 expected_tools: [describe_schema, propose_query, execute_query]
+instructions: [INSTR-8, INSTR-11]
 max_steps: 8
 expect:
   guard: passed

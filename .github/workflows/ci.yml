@@ -40,3 +40,6 @@ jobs:
 
       - name: Frozen gold answers belong to the current gold SQL
         run: python evals/tools/freeze_gold.py --check
+
+      - name: Every instruction in the prompt has a check
+        run: python evals/tools/instruction_coverage.py

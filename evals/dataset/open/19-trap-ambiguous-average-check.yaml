@@ -6,6 +6,7 @@ kind: trap
 trap_type: ambiguous
 gotchas: [average-check-is-per-line]
 expected_tools: [describe_schema]
+instructions: [INSTR-9, INSTR-13]
 max_steps: 6
 expect:
   guard: not-applicable

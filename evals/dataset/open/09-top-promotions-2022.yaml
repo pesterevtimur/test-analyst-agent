@@ -6,6 +6,7 @@ kind: answerable
 metrics: [promo_revenue]
 gotchas: [promo-placeholder-row]
 expected_tools: [describe_schema, propose_query, execute_query]
+instructions: [INSTR-4]
 max_steps: 8
 gold_sql: |
   SELECT a.aktnr AS promo_id, a.aktxt AS promo, SUM(v.netwr) AS revenue

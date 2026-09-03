@@ -136,6 +136,7 @@ def test_a_column_that_does_not_exist_is_refused(guards):
 
 @pytest.mark.parametrize("column", ["telf1", "smtp_addr", "name1", "stras"])
 def test_personal_columns_are_refused(guards, column):
+    """INSTR-3: personal fields are never queried, whatever the reason given."""
     verdict = guards.check(f"SELECT k.{column} FROM sh.zkna1 k WHERE k.mandt = '100'")
     assert not verdict.ok
     assert "masking" in failed_ids(verdict)

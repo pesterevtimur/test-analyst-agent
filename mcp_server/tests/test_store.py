@@ -42,6 +42,8 @@ def make_proposal(store: Store, *, user: str = "analyst-1", status=ProposalStatu
 
 # --- single use --------------------------------------------------------------
 
+# INSTR-5: SQL reaches the database only through a proposal, and a proposal is
+# single use, so an approval cannot be replayed.
 def test_an_approved_proposal_executes_once(store):
     proposal = make_proposal(store)
     store.decide(proposal.id, status=ProposalStatus.APPROVED, by="analyst-1")
@@ -53,6 +55,8 @@ def test_an_approved_proposal_executes_once(store):
         store.claim_for_execution(proposal.id, user_id="analyst-1")
 
 
+# INSTR-7: a pending proposal waits for an analyst and cannot be executed by
+# the agent, whatever it decides in the conversation.
 def test_a_pending_proposal_cannot_execute(store):
     proposal = make_proposal(store)
     with pytest.raises(ValueError, match="cannot run"):

@@ -6,6 +6,7 @@ kind: answerable
 metrics: [revenue, customers_count]
 gotchas: [customers-need-distinct]
 expected_tools: [describe_schema, propose_query, execute_query]
+instructions: [INSTR-2]
 max_steps: 8
 gold_sql: |
   SELECT c.vtext AS channel,

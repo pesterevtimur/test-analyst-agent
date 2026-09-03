@@ -16,6 +16,7 @@ fitted to the questions it could see.
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -96,6 +97,10 @@ class Question(BaseModel):
     # check the set covers the documented traps rather than the easy paths.
     gotchas: list[str] = Field(default_factory=list)
     expected_tools: list[str] = Field(default_factory=list)
+    # Numbered instructions of the prompt this question checks. The other half of
+    # the instruction-coverage metric: a rule nothing checks gets deleted from
+    # the prompt rather than trusted (SPEC, section 8).
+    instructions: list[str] = Field(default_factory=list)
     max_steps: int = 10
     gold_sql: str | None = None
     expect: Expectation
@@ -107,6 +112,10 @@ class Question(BaseModel):
 
     @model_validator(mode="after")
     def _consistent(self) -> Question:
+        for name in self.instructions:
+            if not re.fullmatch(r"INSTR-\d+", name):
+                raise ValueError(f"{self.id}: {name!r} is not an instruction number")
+
         if self.kind is Kind.ANSWERABLE:
             if not self.gold_sql or not self.gold_sql.strip():
                 raise ValueError(f"{self.id}: answerable question without gold SQL")

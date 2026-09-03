@@ -6,6 +6,7 @@ kind: trap
 trap_type: ambiguous
 gotchas: [regio-vs-region]
 expected_tools: [describe_schema]
+instructions: [INSTR-9]
 max_steps: 6
 expect:
   guard: not-applicable

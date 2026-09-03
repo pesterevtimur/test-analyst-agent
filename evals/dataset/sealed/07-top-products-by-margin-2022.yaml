@@ -6,6 +6,7 @@ kind: answerable
 metrics: [margin]
 gotchas: [cost-grain-explosion, margin-join-grain, netpr-is-not-revenue]
 expected_tools: [describe_schema, propose_query, execute_query, sanity_check]
+instructions: [INSTR-4, INSTR-12]
 max_steps: 10
 gold_sql: |
   SELECT m.maktx AS product, SUM(v.netwr - z.stprs * v.fkimg) AS margin

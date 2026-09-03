@@ -6,6 +6,7 @@ kind: answerable
 metrics: [margin_percent]
 gotchas: [cost-grain-explosion, margin-definition]
 expected_tools: [describe_schema, propose_query, execute_query, sanity_check]
+instructions: [INSTR-2, INSTR-12]
 max_steps: 10
 gold_sql: |
   SELECT m.mtart AS material_type,

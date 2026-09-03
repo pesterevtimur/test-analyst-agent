@@ -6,6 +6,7 @@ kind: answerable
 metrics: [revenue, quantity_sold]
 gotchas: [matnr-padding]
 expected_tools: [describe_schema, propose_query, execute_query]
+instructions: [INSTR-4]
 max_steps: 8
 gold_sql: |
   SELECT m.maktx AS product,

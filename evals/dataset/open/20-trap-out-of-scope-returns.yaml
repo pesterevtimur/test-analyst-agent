@@ -6,6 +6,7 @@ kind: trap
 trap_type: out-of-scope
 gotchas: []
 expected_tools: [describe_schema]
+instructions: [INSTR-10]
 max_steps: 6
 expect:
   guard: not-applicable
