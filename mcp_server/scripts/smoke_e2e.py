@@ -4,9 +4,17 @@ Walks the whole chain the way the agent will: describe, propose, execute,
 sanity check. Also tries the two things that must fail, so the run proves the
 guard rails rather than only the happy path.
 
-Run:
-    docker run --rm --network host -v "$PWD/scripts:/s:ro" sap-agent-mcp:dev \
-        python /s/smoke_e2e.py http://127.0.0.1:8080/mcp
+Run from the repository root, with the stack up:
+
+    set -a && . ./.env && set +a
+    docker run --rm --network host \
+        -v "$PWD/mcp_server/scripts:/s:ro" -v sap-agent_mcp-state:/state \
+        -e ORACLE_APP_USER -e ORACLE_APP_USER_PASSWORD \
+        -e ORACLE_DSN=127.0.0.1:1521/REPPDB1 -e STATE_PATH=/state/sap-agent.db \
+        sap-agent-mcp:dev python /s/smoke_e2e.py http://127.0.0.1:8080/mcp
+
+The state volume and the database credentials are both needed: the check
+approves a proposal the way an analyst would, which means writing to the queue.
 """
 
 from __future__ import annotations
