@@ -1,0 +1,21 @@
+id: sealed-01
+question: Сколько всего товаров у нас в каталоге?
+asked_by: категорийный менеджер
+difficulty: simple
+kind: answerable
+metrics: []
+gotchas: [lvorm-filter]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT COUNT(*) AS products
+  FROM sh.zmara m
+  WHERE m.mandt = '100' AND m.lvorm = ' '
+expect:
+  key_columns: []
+  measure_columns: [PRODUCTS]
+  guard: passed
+notes: >
+  Зеркало вопроса про клиентов, но на материалах, где помеченных к удалению
+  строк нет. Проверяет, что фильтр ставится по словарю, а не по тому, меняет
+  он число или нет.

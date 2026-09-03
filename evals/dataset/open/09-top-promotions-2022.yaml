@@ -1,0 +1,28 @@
+id: open-09
+question: Какие акции дали больше всего денег в двадцать втором? Первую пятёрку.
+asked_by: руководитель маркетинга
+difficulty: medium
+kind: answerable
+metrics: [promo_revenue]
+gotchas: [promo-placeholder-row]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 8
+gold_sql: |
+  SELECT a.aktnr AS promo_id, a.aktxt AS promo, SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.wakh a ON a.aktnr = v.aktnr AND a.mandt = v.mandt
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND v.aktnr <> '0000000999' AND p.gjahr = 2022
+  GROUP BY a.aktnr, a.aktxt
+  ORDER BY revenue DESC
+  FETCH FIRST 5 ROWS ONLY
+expect:
+  key_columns: [PROMO_ID]
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Без исключения заглушки первой строкой всегда идёт «без акции», и отчёт по
+  акциям возглавляет не акция. Группировка идёт по номеру, а не по названию:
+  названия в справочнике не уникальны.
+  Замер 3 сентября: настоящих акций в 2022 году две, поэтому правильный ответ
+  на «топ-5» это две строки, а не пять.

@@ -1,0 +1,26 @@
+id: sealed-05
+question: Сколько в среднем приносит один клиент в каждом канале за двадцать второй?
+asked_by: руководитель отдела продаж
+difficulty: medium
+kind: answerable
+metrics: [revenue, customers_count]
+gotchas: [customers-need-distinct]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 8
+gold_sql: |
+  SELECT c.vtext AS channel,
+         SUM(v.netwr) / NULLIF(COUNT(DISTINCT v.kunnr), 0) AS revenue_per_customer
+  FROM sh.zvbrp v
+  JOIN sh.ztvtwt c ON c.vtweg = v.vtweg AND c.mandt = v.mandt AND c.spras = 'E'
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.gjahr = 2022
+  GROUP BY c.vtext
+  ORDER BY revenue_per_customer DESC
+expect:
+  key_columns: [CHANNEL]
+  measure_columns: [REVENUE_PER_CUSTOMER]
+  guard: passed
+notes: >
+  Без DISTINCT в знаменателе окажутся строки фактуры, и число упадёт примерно
+  в сто тридцать раз. Ошибка не видна глазом: результат остаётся похожим на
+  деньги.

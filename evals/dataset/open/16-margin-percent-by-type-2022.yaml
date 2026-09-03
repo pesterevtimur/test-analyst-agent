@@ -1,0 +1,29 @@
+id: open-16
+question: Какая маржинальность по типам товаров получилась в двадцать втором?
+asked_by: финансовый директор
+difficulty: complex
+kind: answerable
+metrics: [margin_percent]
+gotchas: [cost-grain-explosion, margin-definition]
+expected_tools: [describe_schema, propose_query, execute_query, sanity_check]
+max_steps: 10
+gold_sql: |
+  SELECT m.mtart AS material_type,
+         SUM(v.netwr - z.stprs * v.fkimg) / NULLIF(SUM(v.netwr), 0) AS margin_percent
+  FROM sh.zvbrp v
+  JOIN sh.zkeko z ON z.matnr = v.matnr AND z.kadat = v.fkdat
+                 AND z.vtweg = v.vtweg AND z.aktnr = v.aktnr
+                 AND z.mandt = v.mandt
+  JOIN sh.zmara m ON m.matnr = v.matnr AND m.mandt = v.mandt
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND m.lvorm = ' ' AND p.gjahr = 2022
+  GROUP BY m.mtart
+  ORDER BY margin_percent DESC
+expect:
+  key_columns: [MATERIAL_TYPE]
+  measure_columns: [MARGIN_PERCENT]
+  guard: passed
+notes: >
+  Доля, а не сумма: результат от нуля до единицы, знаменатель обёрнут в NULLIF.
+  Пять типов материалов. Проверяет, что агент берёт объявленную метрику, а не
+  выдумывает свою формулу маржинальности.

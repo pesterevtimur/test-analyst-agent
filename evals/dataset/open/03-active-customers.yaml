@@ -1,0 +1,21 @@
+id: open-03
+question: Сколько у нас сейчас клиентов?
+asked_by: руководитель отдела продаж
+difficulty: simple
+kind: answerable
+metrics: []
+gotchas: [lvorm-filter, lvorm-inverted]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT COUNT(*) AS customers
+  FROM sh.zkna1 k
+  WHERE k.mandt = '100' AND k.lvorm = ' '
+expect:
+  key_columns: []
+  measure_columns: [CUSTOMERS]
+  guard: passed
+notes: >
+  Главная ловушка данных в одном вопросе. Без фильтра признака удаления ответ
+  55 500 вместо 10 621, то есть завышение в пять раз. С перевёрнутым фильтром
+  ответ 44 879, и он тоже похож на правду. Проверяется именно число.

@@ -1,0 +1,29 @@
+id: open-07
+question: Слушай, дай продажи по регионам за двадцать второй год.
+asked_by: коммерческий директор
+difficulty: medium
+kind: answerable
+metrics: [revenue]
+gotchas: [regio-vs-region, spras-doubling, lvorm-filter]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 8
+gold_sql: |
+  SELECT t.regio_text AS region, SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.zkna1 k ON k.kunnr = v.kunnr AND k.mandt = v.mandt
+  JOIN sh.zt005t t ON t.land1 = k.land1 AND t.mandt = k.mandt AND t.spras = 'E'
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND k.lvorm = ' ' AND p.gjahr = 2022
+  GROUP BY t.regio_text
+  ORDER BY revenue DESC
+expect:
+  key_columns: [REGION]
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Слово «регион» в этой схеме означает две разные вещи: REGIO в клиенте это
+  штат или область, REGIO_TEXT в текстах стран это макрорегион. Бизнес почти
+  всегда имеет в виду второе. Замер 3 сентября: у помеченных к удалению
+  клиентов продаж нет вовсе, поэтому фильтр LVORM здесь не меняет числа, но
+  остаётся правильным по словарю.
+  Продажи есть в пяти макрорегионах из шести: в Африке их нет.

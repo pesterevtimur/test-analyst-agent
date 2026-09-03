@@ -1,0 +1,26 @@
+id: open-14
+question: Сравни выручку по кварталам двадцать первого и двадцать второго.
+asked_by: финансовый контролёр
+difficulty: complex
+kind: answerable
+metrics: [revenue]
+gotchas: [quartal-format]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 10
+gold_sql: |
+  SELECT SUBSTR(p.quartal, 6, 2) AS quarter,
+         SUM(CASE WHEN p.gjahr = 2021 THEN v.netwr ELSE 0 END) AS revenue_2021,
+         SUM(CASE WHEN p.gjahr = 2022 THEN v.netwr ELSE 0 END) AS revenue_2022
+  FROM sh.zvbrp v
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.gjahr IN (2021, 2022)
+  GROUP BY SUBSTR(p.quartal, 6, 2)
+  ORDER BY quarter
+expect:
+  key_columns: [QUARTER]
+  measure_columns: [REVENUE_2021, REVENUE_2022]
+  guard: passed
+notes: >
+  Сравнение двух периодов в одной таблице, а не двумя запросами. Номер квартала
+  вынимается из строки календаря, потому что отдельного поля с номером квартала
+  в этой таблице нет.

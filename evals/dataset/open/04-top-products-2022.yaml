@@ -1,0 +1,26 @@
+id: open-04
+question: Дай топ-10 товаров по выручке за двадцать второй.
+asked_by: категорийный менеджер
+difficulty: simple
+kind: answerable
+metrics: [revenue]
+gotchas: [netpr-is-not-revenue, revenue-not-from-price]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT m.maktx AS product, SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.zmara m ON m.matnr = v.matnr AND m.mandt = v.mandt
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND m.lvorm = ' ' AND p.gjahr = 2022
+  GROUP BY m.maktx
+  ORDER BY revenue DESC
+  FETCH FIRST 10 ROWS ONLY
+expect:
+  key_columns: [PRODUCT]
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Ловушка в справочнике материалов: NETPR это цена прайс-листа. Запрос
+  SUM(m.netpr * v.fkimg) отработает без ошибок и вернёт завышенный порядок
+  товаров. Честный ответ считается по NETWR.

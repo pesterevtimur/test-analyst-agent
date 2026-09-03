@@ -1,0 +1,23 @@
+id: open-01
+question: Сколько мы продали за двадцать первый год?
+asked_by: коммерческий директор
+difficulty: simple
+kind: answerable
+metrics: [revenue]
+gotchas: [mandt-required, currency-sum]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT v.waerk AS currency, SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.gjahr = 2021
+  GROUP BY v.waerk
+expect:
+  key_columns: [CURRENCY]
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Самый простой вопрос набора. Проверяет три вещи: выручка берётся из NETWR, а
+  не из цены прайс-листа, год берётся из календаря, разрез по валюте есть даже
+  тогда, когда валюта одна.

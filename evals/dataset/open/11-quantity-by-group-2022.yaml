@@ -1,0 +1,25 @@
+id: open-11
+question: Сколько штук продали в двадцать втором по группам товаров?
+asked_by: категорийный менеджер
+difficulty: medium
+kind: answerable
+metrics: [quantity_sold]
+gotchas: [quantity-unit-mixing, meins-mixing]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 8
+gold_sql: |
+  SELECT m.matkl AS material_group, m.meins AS unit, SUM(v.fkimg) AS quantity
+  FROM sh.zvbrp v
+  JOIN sh.zmara m ON m.matnr = v.matnr AND m.mandt = v.mandt
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND m.lvorm = ' ' AND p.gjahr = 2022
+  GROUP BY m.matkl, m.meins
+  ORDER BY quantity DESC
+expect:
+  key_columns: [MATERIAL_GROUP, UNIT]
+  measure_columns: [QUANTITY]
+  guard: passed
+notes: >
+  Количество имеет смысл только внутри одной единицы измерения. Правильный
+  ответ несёт разрез по единице, даже если единица в этих данных одна: без
+  разреза тот же запрос в контуре заказчика сложит килограммы со штуками.

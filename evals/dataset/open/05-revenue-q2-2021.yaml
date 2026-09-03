@@ -1,0 +1,22 @@
+id: open-05
+question: Сколько было выручки во втором квартале двадцать первого года?
+asked_by: финансовый контролёр
+difficulty: simple
+kind: answerable
+metrics: [revenue]
+gotchas: [quartal-format]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.quartal = '2021-02'
+expect:
+  key_columns: []
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Формат квартала в календаре это строка 2021-02, где 02 это номер квартала.
+  Фильтр 'Q2 2021' или '2021-2' вернёт пусто без единой ошибки, и такой ответ
+  выглядит как «продаж не было».

@@ -1,0 +1,23 @@
+id: open-06
+question: Нужна помесячная выручка за двадцать второй год.
+asked_by: финансовый контролёр
+difficulty: simple
+kind: answerable
+metrics: [revenue]
+gotchas: [spmon-format]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT p.spmon AS period, SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.gjahr = 2022
+  GROUP BY p.spmon
+  ORDER BY p.spmon
+expect:
+  key_columns: [PERIOD]
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Двенадцать строк, период пишется слитно, 202201. Проверяет заодно, что агент
+  берёт период из календаря, а не собирает его функцией по дате фактуры.

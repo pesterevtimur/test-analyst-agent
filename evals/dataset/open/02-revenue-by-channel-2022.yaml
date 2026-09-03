@@ -1,0 +1,28 @@
+id: open-02
+question: Разбей выручку двадцать второго года по каналам продаж.
+asked_by: руководитель отдела продаж
+difficulty: simple
+kind: answerable
+metrics: [revenue]
+gotchas: [spras-doubling]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT c.vtext AS channel, SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.ztvtwt c ON c.vtweg = v.vtweg AND c.mandt = v.mandt AND c.spras = 'E'
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.gjahr = 2022
+  GROUP BY c.vtext
+  ORDER BY revenue DESC
+expect:
+  key_columns: [CHANNEL]
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Соединение с таблицей текстов требует фильтра по языку. В этих данных язык
+  один, поэтому ошибка не проявится числом, но проявится в контуре заказчика.
+  Отсутствие фильтра здесь не ловится ограничителем и остаётся видимым только
+  в тексте запроса.
+  Замер 3 сентября: в 2022 году продажи шли по трём каналам из пяти
+  заведённых, и правильный ответ это три строки.

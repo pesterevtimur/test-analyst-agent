@@ -1,0 +1,32 @@
+id: open-13
+question: Посчитай маржу по каналам за двадцать второй год.
+asked_by: финансовый директор
+difficulty: complex
+kind: answerable
+metrics: [margin, revenue]
+gotchas: [cost-grain-explosion, margin-join-grain, margin-definition]
+expected_tools: [describe_schema, propose_query, execute_query, sanity_check]
+max_steps: 10
+gold_sql: |
+  SELECT c.vtext AS channel,
+         SUM(v.netwr) AS revenue,
+         SUM(v.netwr - z.stprs * v.fkimg) AS margin
+  FROM sh.zvbrp v
+  JOIN sh.zkeko z ON z.matnr = v.matnr AND z.kadat = v.fkdat
+                 AND z.vtweg = v.vtweg AND z.aktnr = v.aktnr
+                 AND z.mandt = v.mandt
+  JOIN sh.ztvtwt c ON c.vtweg = v.vtweg AND c.mandt = v.mandt AND c.spras = 'E'
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.gjahr = 2022
+  GROUP BY c.vtext
+  ORDER BY margin DESC
+expect:
+  key_columns: [CHANNEL]
+  measure_columns: [REVENUE, MARGIN]
+  guard: passed
+notes: >
+  Самая дорогая ошибка схемы. Ключ калькуляции это материал, дата, канал и
+  акция сразу, соединение только по материалу задваивает строки в разы и
+  завышает и выручку, и маржу. Замер 3 сентября: по всем пяти полям
+  соединяются 916 039 строк продаж из 918 843, то есть маржа считается по
+  99,7 процента строк, и в ответе это надо назвать.

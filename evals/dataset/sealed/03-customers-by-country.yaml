@@ -1,0 +1,25 @@
+id: sealed-03
+question: В каких пяти странах у нас больше всего клиентов?
+asked_by: коммерческий директор
+difficulty: medium
+kind: answerable
+metrics: []
+gotchas: [lvorm-filter, spras-doubling]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 8
+gold_sql: |
+  SELECT t.landx AS country, COUNT(*) AS customers
+  FROM sh.zkna1 k
+  JOIN sh.zt005t t ON t.land1 = k.land1 AND t.mandt = k.mandt AND t.spras = 'E'
+  WHERE k.mandt = '100' AND k.lvorm = ' '
+  GROUP BY t.landx
+  ORDER BY customers DESC
+  FETCH FIRST 5 ROWS ONLY
+expect:
+  key_columns: [COUNTRY]
+  measure_columns: [CUSTOMERS]
+  guard: passed
+notes: >
+  Две ловушки сразу: признак удаления и язык в таблице текстов. Без первой
+  порядок стран может измениться, без второй в контуре с несколькими языками
+  каждая страна задвоится.

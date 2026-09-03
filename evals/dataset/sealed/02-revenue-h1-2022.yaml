@@ -1,0 +1,21 @@
+id: sealed-02
+question: Сколько мы сделали выручки за первое полугодие двадцать второго?
+asked_by: финансовый контролёр
+difficulty: simple
+kind: answerable
+metrics: [revenue]
+gotchas: [quartal-format]
+expected_tools: [describe_schema, propose_query, execute_query]
+max_steps: 6
+gold_sql: |
+  SELECT SUM(v.netwr) AS revenue
+  FROM sh.zvbrp v
+  JOIN sh.zt009b p ON p.budat = v.fkdat AND p.mandt = v.mandt
+  WHERE v.mandt = '100' AND p.quartal IN ('2022-01', '2022-02')
+expect:
+  key_columns: []
+  measure_columns: [REVENUE]
+  guard: passed
+notes: >
+  Полугодие в словаре не объявлено, его надо собрать из двух кварталов или из
+  диапазона дат. Проверяет перевод бизнес-периода в поля календаря.
