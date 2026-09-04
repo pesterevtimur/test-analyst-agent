@@ -95,6 +95,7 @@ def main() -> int:
                 "id": p.id, "question": p.question, "sql": p.sql, "status": p.status,
                 "checks": p.checks, "tables": p.tables,
                 "estimated_rows": p.estimated_rows,
+                "data_as_of": p.data_as_of,
                 "policy_reason": p.policy_reason,
                 "created_at": p.created_at.isoformat(),
             }

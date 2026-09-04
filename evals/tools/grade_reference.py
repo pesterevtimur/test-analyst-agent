@@ -233,10 +233,25 @@ def grade_questions(raw: dict, *, use_judge: bool) -> dict:
                 entry["diagnosis"] = diagnose(question, table, comparison)
                 entry["queries_executed"] = len(tables)
 
+            executed_sql = next(
+                (p["sql"] for p in reversed(run["proposals"])
+                 if p["status"] == "executed"), None
+            )
+            # Момент данных судье нужен: без него он честно считает выдумкой
+            # строку «данные на 2026-09-02», которую промпт требует писать.
+            # Берётся из предложения, а на старых прогонах из замороженного
+            # эталона: реплика у них одна и та же.
+            moment = next(
+                (p.get("data_as_of") for p in reversed(run["proposals"])
+                 if p.get("data_as_of")), None
+            )
+            if moment is None and frozen.exists(question.id):
+                moment = frozen.load(question.id).data_as_of
             verdict = judge(
                 question=run["question"], answer=run["answer"], result=table,
-                data_as_of=None,
+                data_as_of=moment,
                 measure_columns=question.expect.measure_columns,
+                sql=executed_sql,
                 use_model=use_judge,
             )
             entry["judge_failures"] = [c.id for c in verdict.failures]
