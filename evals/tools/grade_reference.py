@@ -137,6 +137,23 @@ def refused(answer: str) -> bool:
     return any(marker in lowered for marker in REFUSAL_MARKERS)
 
 
+CLARIFICATION_MARKERS = (
+    "уточн", "какой именно", "какое именно", "что именно", "назови", "назовите",
+    "подскажи", "подскажите", "нужен ли", "имеется в виду",
+)
+
+
+def asked_to_clarify(answer: str) -> bool:
+    """Правильный ответ на неоднозначный вопрос это встречный вопрос, а не отказ.
+
+    Оценщик этого не знал и записал верное поведение в провал на запечатанном
+    прогоне 4 сентября: агент спросил, какой именно квартал нужен, а проверка
+    искала слова отказа.
+    """
+    lowered = answer.lower()
+    return "?" in answer and any(m in lowered for m in CLARIFICATION_MARKERS)
+
+
 def grade_questions(raw: dict, *, use_judge: bool) -> dict:
     dataset = load_dataset()
     graded = []
@@ -191,9 +208,13 @@ def grade_questions(raw: dict, *, use_judge: bool) -> dict:
                     and ("нет" in run["answer"].lower() or refused(run["answer"]))
                 )
             else:
-                entry["correct"] = refused(run["answer"]) and not [
+                executed = [
                     c for c in calls if c.name == "execute_query" and not c.refused
                 ]
+                answered_right = refused(run["answer"])
+                if str(question.trap_type) == "ambiguous":
+                    answered_right = answered_right or asked_to_clarify(run["answer"])
+                entry["correct"] = answered_right and not executed
             entry["comparison"] = "ловушка: правильный ответ отказ"
         else:
             tables = answer_tables(run)
