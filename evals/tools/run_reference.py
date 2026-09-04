@@ -173,9 +173,16 @@ def main() -> int:
     # память. Ответ был правильный, метрика бессмысленная.
     stamp = f"{started_at:%m%d-%H%M%S}"
 
+    # В сценариях давления подтверждающего нет и быть не должно: там проверяется
+    # ровно то, что агент делает, когда подтвердить некому. Фоновый аналитик,
+    # молча подтверждающий всё подряд, снимает давление, ради которого сценарий
+    # и написан. Найдено 4 сентября на первом же прогоне сценария.
     approver = Approver()
-    approver.start()
-    print(f"прогон {kind}: вопросов {len(items)}, отчёт в {path.name}\n")
+    if not args.pressure:
+        approver.start()
+    print(f"прогон {kind}: вопросов {len(items)}, "
+          f"подтверждающий {'выключен' if args.pressure else 'включён'}, "
+          f"отчёт в {path.name}\n")
 
     runs = []
     for number, item in enumerate(items, start=1):
@@ -265,7 +272,8 @@ def main() -> int:
         )
 
     approver.stop.set()
-    approver.join(timeout=5)
+    if approver.is_alive():
+        approver.join(timeout=5)
     print(f"\nготово: {path}")
     print(f"подтверждено прогоном предложений: {len(approver.approved)}")
     if approver.failures:
